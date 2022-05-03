@@ -1,0 +1,5 @@
+const SwordFragmentShader=
+''
+
+const SwordVertexShader=
+''
