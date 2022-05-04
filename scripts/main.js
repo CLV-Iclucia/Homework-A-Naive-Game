@@ -99,10 +99,10 @@ function main()
         alert("无法初始化WebGL，你的浏览器、操作系统或硬件等可能不支持WebGL。");
         return;
     }
-    const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader,false);
+    const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
     const SkyBoxTex=initSkyBoxTexture(gl);
 	const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
-	const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader,true);
+	const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
 	const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
     let lastFrame=0;
 	console.log("Start Game Loop");

@@ -11,7 +11,16 @@ function loadShader(gl, type, source)
     }
     return shader;
 }
-function initShader(gl,vshader,fshader)//返回着色器程序
+function isword(ch)
+{
+    return (ch>='0'&&ch<='9')||(ch>='A'&&ch<='Z')||(ch>='a'&&ch<='z');
+}
+function istype(word)
+{
+    let str=word.substr(0,3);
+    return str=='vec'||str=='sam'||str=='mat';
+}
+function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对象中存储uniform变量地址和attribute变量地址
 {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
     const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fshader);
@@ -24,45 +33,69 @@ function initShader(gl,vshader,fshader)//返回着色器程序
         alert('Unable to initialize the shader program: ');
         return null;
     }
-    if(!hasModel)return {
+    let j=i,varType=-1,Type,matchName;
+    let UniformVar,AttributeVar;
+    for(let i=0;i<vshader.length;i=j+1)
+    {
+        j=i;
+        while(isword(vshader[j]))j++;
+        const word=vshader.substr(i,j-i);
+        if(word=='uniform')varType=0;
+        if(word=='atrribute')varType=1;
+        if(varType>=0&&istype(word))
+        {
+            Type=word;
+            matchName=1;
+        }
+        if(matchName)
+        {
+            if(varType)UniformVar.push(gl.getUniformLocation(ID,word));
+            else AttributeVar.push([Type[3].toNumber(),gl.getAtrribLocation(ID,word)]);
+            matchName=0;
+            varType=-1;
+        }
+        if(word=='void')break;
+    }
+    varType=false;
+    for(let i=0;i<fshader.length;i=j+1)
+    {
+        j=i;
+        while(isword(vshader[j]))j++;
+        const word=vshader.substr(i,j-i);
+        if(word=='uniform')varType=true;
+        if(varType&&istype(word))matchName=1;
+        if(matchName)
+        {
+            UniformVar.push(gl.getUniformLocation(ID,word));
+            matchName=0;
+            varType=false;
+        }
+        if(word=='void')break;
+    }
+    return {
         shader:ID,
-        AttribLoc:
-        {
-            vPos:gl.getAttribLocation(ID, 'aPos'),
-        },
-        UniLoc:
-        {
-            view:gl.getUniformLocation(ID,'view'),
-            proj:gl.getUniformLocation(ID,'proj'),
-            myTex:gl.getUniformLocation(ID,'myTex')
-        },
-    };
-    else return{
-        shader:ID,
-        AttribLoc:
-        {
-            vPos:gl.getAttribLocation(ID, 'aPos'),
-        },
-        UniLoc:
-        {
-            view:gl.getUniformLocation(ID,'view'),
-            proj:gl.getUniformLocation(ID,'proj'),
-            model:gl.getUniformLocation(ID,'model'),
-            myTex:gl.getUniformLocation(ID,'myTex')
-        },
+        UniLoc:UniformVar,
+        AttribLoc:AttributeVar,
     };
 }
-function initModel(gl,Shader,pos,idx)
+function initModel(gl,Shader,attrib,idx)
 {
     const VBO=gl.createBuffer();
     const VAO=gl.createVertexArray();
     gl.bindVertexArray(VAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
-    const VerArray=new Float32Array(pos);
-    console.log(VerArray);
-    gl.bufferData(gl.ARRAY_BUFFER,VerArray,gl.STATIC_DRAW);
-    gl.vertexAttribPointer(Shader.AttribLoc.vPos,3,gl.FLOAT,false,3*gl.FLOAT.size,0);//注意gl.FLOAT对应的是32位浮点！
-    gl.enableVertexAttribArray(Shader.AttribLoc.vPos);
+    const AttribArray=new Float32Array(attrib);
+    console.log(AttribArray);
+    gl.bufferData(gl.ARRAY_BUFFER,AttribArray,gl.STATIC_DRAW);
+    const attributeCnt=Shader.AttribLoc.length;
+    let sum=0,stride=0;
+    for(let i=0;i<attributeCnt;i++)stride+=Shader.AttribLoc[i][0];
+    for(let i=0;i<attributeCnt;i++)
+    {
+        const sz=Shader.AttribLoc[i][0];
+        gl.vertexAttribPointer(Shader.AttribLoc[i][1],sz,gl.FLOAT,false,stride*gl.FLOAT.size,sum);//注意gl.FLOAT对应的是32位浮点！
+        gl.enableVertexAttribArray(Shader.AttribLoc[i][1]);
+    }
     const EBO=gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,EBO);
     const IdxArray=new Uint16Array(idx);
