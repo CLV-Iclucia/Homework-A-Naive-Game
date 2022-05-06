@@ -49,7 +49,7 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         }
         if(matchName)
         {
-            if(varType)UniformVar.push(gl.getUniformLocation(ID,word));
+            if(!varType)UniformVar.push(gl.getUniformLocation(ID,word));
             else AttributeVar.push([Type[3].toNumber(),gl.getAtrribLocation(ID,word)]);
             matchName=0;
             varType=-1;
