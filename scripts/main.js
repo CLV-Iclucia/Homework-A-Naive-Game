@@ -82,20 +82,26 @@ function processInput(currentFrame)
 		}
 	}
 }
-function render(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变量列表，顶点数组对象VAO和三角面个数tot来绘制对象
+function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变量列表，顶点数组对象VAO和三角面个数tot来绘制对象
 {
 	gl.useProgram(Shader.shader);
 	for(let i=0;i<UniVar.length;i++)
 	{
 		const u=UniVar[i];
 		if(u[0]=='mat4')gl.uniformMatrix4fv(Shader.UniLoc[i],false,u[1]);
-		if(u[0]=='mat3')gl.uniformMatrix3fv(Shader.UniLoc[i],false,u[1]);
-		if(u[0]=='vec4')gl.uniform4fv(Shader.UniLoc[i],u[1]);
-		if(u[0]=='vec3')gl.uniform3fv(Shader.UniLoc[i],u[1]);
-		if(u[0]=='sampler')gl.uniform1i(Shader.UniLoc[i],u[1]);
+		else if(u[0]=='mat3')gl.uniformMatrix3fv(Shader.UniLoc[i],false,u[1]);
+		else if(u[0]=='vec4')gl.uniform4fv(Shader.UniLoc[i],u[1]);
+		else if(u[0]=='vec3')gl.uniform3fv(Shader.UniLoc[i],u[1]);
+		else gl.uniform1i(Shader.UniLoc[i],u[1]);
 	}
 	gl.bindVertexArray(VAO);
-    gl.drawElements(gl.TRIANGLES,tot,gl.UNSIGNED_SHORT,0);
+    gl.drawElements(gl.TRIANGLES,tot,gl.UNSIGNED_SHORT,0);//统一使用顶点索引绘制
+	gl.bindVertexArray(null);
+}
+function initSwdModel()
+{
+	const mat=mat4.create();
+	console.log(mat);
 }
 function main()
 {
@@ -133,9 +139,10 @@ function main()
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
 		gl.enable(gl.DEPTH_TEST);
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
-		const SwordVar=[['mat4',view],['mat4',proj],['mat4',model]];
-		render(SkyBoxShader,SkyBoxVar,SkyBoxVAO);
-		render(SwordShader,SwordVar,SwordVAO);
+		const swordModel=initSwdModel();
+		const SwordVar=[['mat4',view],['mat4',proj],['mat4',swordModel]];
+		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,12);
+		renderObject(SwordShader,SwordVar,SwordVAO,186);
         requestAnimationFrame(render);
     }
     requestAnimationFrame(render);

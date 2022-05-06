@@ -33,8 +33,8 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         alert('Unable to initialize the shader program: ');
         return null;
     }
-    let j=i,varType=-1,Type,matchName;
-    let UniformVar,AttributeVar;
+    let j,varType=-1,Type,matchName=false;
+    let UniformVar=new Array(),AttributeVar=new Array();
     for(let i=0;i<vshader.length;i=j+1)
     {
         j=i;
@@ -45,7 +45,7 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         if(varType>=0&&istype(word))
         {
             Type=word;
-            matchName=1;
+            matchName=true;
         }
         if(matchName)
         {
