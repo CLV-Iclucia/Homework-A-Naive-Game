@@ -15,11 +15,6 @@ function isword(ch)
 {
     return (ch>='0'&&ch<='9')||(ch>='A'&&ch<='Z')||(ch>='a'&&ch<='z');
 }
-function istype(word)
-{
-    let str=word.substr(0,3);
-    return str=='vec'||str=='sam'||str=='mat';
-}
 function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对象中存储uniform变量地址和attribute变量地址
 {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
@@ -35,42 +30,48 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
     }
     let j,varType=-1,Type,matchName=false;
     let UniformVar=new Array(),AttributeVar=new Array();
-    for(let i=0;i<vshader.length;i=j+1)
+    for(let i=0;i<vshader.length;i=j+1)//从顶点着色器程序中读取出attribute变量和uniform变量
     {
         j=i;
         while(isword(vshader[j]))j++;
         const word=vshader.substr(i,j-i);
-        if(word=='uniform')varType=0;
-        if(word=='atrribute')varType=1;
-        if(varType>=0&&istype(word))
+        if(word=='void')break;
+        if(matchName)
+        {
+            if(!varType)
+            {
+                console.log(word);
+                UniformVar.push(gl.getUniformLocation(ID,word));
+            }
+            else AttributeVar.push([Type[3].toNumber(),gl.getAtrribLocation(ID,word)]);
+            matchName=false;
+            varType=-1;
+        }
+        if(varType>=0)
         {
             Type=word;
             matchName=true;
         }
-        if(matchName)
-        {
-            if(!varType)UniformVar.push(gl.getUniformLocation(ID,word));
-            else AttributeVar.push([Type[3].toNumber(),gl.getAtrribLocation(ID,word)]);
-            matchName=0;
-            varType=-1;
-        }
-        if(word=='void')break;
+        if(word=='uniform')varType=0;
+        if(word=='atrribute')varType=1;
     }
     varType=false;
-    for(let i=0;i<fshader.length;i=j+1)
+    for(let i=0;i<fshader.length;i=j+1)//从片段着色器程序中读取出uniform变量
     {
         j=i;
-        while(isword(vshader[j]))j++;
-        const word=vshader.substr(i,j-i);
-        if(word=='uniform')varType=true;
-        if(varType&&istype(word))matchName=1;
+        while(isword(fshader[j]))j++;
+        const word=fshader.substr(i,j-i);
+        if(word=='void')break;
         if(matchName)
+        
         {
             UniformVar.push(gl.getUniformLocation(ID,word));
-            matchName=0;
+            console.log(word);
+            matchName=false;
             varType=false;
         }
-        if(word=='void')break;
+        if(varType)matchName=true;
+        if(word=='uniform')varType=true;
     }
     return {
         shader:ID,
