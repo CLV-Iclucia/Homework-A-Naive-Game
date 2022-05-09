@@ -38,12 +38,8 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         if(word=='void')break;
         if(matchName)
         {
-            if(!varType)
-            {
-                console.log(word);
-                UniformVar.push(gl.getUniformLocation(ID,word));
-            }
-            else AttributeVar.push([Type[3].toNumber(),gl.getAtrribLocation(ID,word)]);
+            if(!varType)UniformVar.push(gl.getUniformLocation(ID,word));
+            else AttributeVar.push([Number(Type[3]),gl.getAttribLocation(ID,word)]);
             matchName=false;
             varType=-1;
         }
@@ -53,7 +49,7 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
             matchName=true;
         }
         if(word=='uniform')varType=0;
-        if(word=='atrribute')varType=1;
+        if(word=='attribute')varType=1;
     }
     varType=false;
     for(let i=0;i<fshader.length;i=j+1)//从片段着色器程序中读取出uniform变量
@@ -63,10 +59,8 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         const word=fshader.substr(i,j-i);
         if(word=='void')break;
         if(matchName)
-        
         {
             UniformVar.push(gl.getUniformLocation(ID,word));
-            console.log(word);
             matchName=false;
             varType=false;
         }

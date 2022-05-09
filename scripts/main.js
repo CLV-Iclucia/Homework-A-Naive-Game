@@ -98,10 +98,38 @@ function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变
     gl.drawElements(gl.TRIANGLES,tot,gl.UNSIGNED_SHORT,0);//统一使用顶点索引绘制
 	gl.bindVertexArray(null);
 }
-function initSwdModel()
+function Rotate(M,p,theta,A)//使得物体绕着自身坐标系中的p点A轴旋转，p为零向量时等效于glm的rotate
 {
-	const mat=mat4.create();
-	console.log(mat);
+	theta=Math.PI*theta/180;
+	M = mat4.rotate(M, M, theta,A);//注意这种情况下是先旋转再平移
+	M = mat4.translate(M,M,-p);
+	return M;
+}
+function initSwdModel(currentFrame)
+{
+	const model=mat4.create();
+	if (currentFrame <= ATKEndFrame)
+	{
+		model = mat4.translate(model, vec3.clone([-0.1, -0.2, -0.2]));
+		const theta = ATKEndFrame - currentFrame;
+		model = mat4.rotate(model, -30.0*Math.PI/180, vec34.clone([0.0,0.0,1.0]));
+		model = Rotate(model,v,10*(0.3-theta), vec3(0.0,0.0,-0.5));
+	}
+	else if(currentFrame > ATKEndFrame+0.2)
+	{
+		if (currentFrame <= contATKEndFrame)
+		{
+			model = translate(model, vec3.copy(0.1, 0.0, -0.2));
+			const theta = contATKEndFrame - currentFrame;
+			model = rotate(model, radians(110.0), vec3(0.0, 0.0, 1.0));
+			model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*( 0.3 - theta), vec3.clone([-1.0,0.0,0.0]));
+		}
+		else if (currentFrame <= contATKEndFrame + 0.2)model = mat4(0.0);
+		else model = translate(model, vec3.clone([0.15, -0.2, -0.5]));
+	}
+	else model = mat4.create();
+	model = scale(model,vec3.clone([0.05,0.05,0.05]));
+	return model;
 }
 function main()
 {
@@ -139,7 +167,7 @@ function main()
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
 		gl.enable(gl.DEPTH_TEST);
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
-		const swordModel=initSwdModel();
+		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',view],['mat4',proj],['mat4',swordModel]];
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,12);
 		renderObject(SwordShader,SwordVar,SwordVAO,186);
