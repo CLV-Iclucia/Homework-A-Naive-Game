@@ -39,7 +39,11 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         if(matchName)
         {
             if(!varType)UniformVar.push(gl.getUniformLocation(ID,word));
-            else AttributeVar.push([Number(Type[3]),gl.getAttribLocation(ID,word)]);
+            else 
+            {
+                AttributeVar.push([Number(Type[3]),gl.getAttribLocation(ID,word)]);
+                console.log(word);
+            }
             matchName=false;
             varType=-1;
         }
@@ -88,8 +92,10 @@ function initModel(gl,Shader,attrib,idx)
     for(let i=0;i<attributeCnt;i++)
     {
         const sz=Shader.AttribLoc[i][0];
-        gl.vertexAttribPointer(Shader.AttribLoc[i][1],sz,gl.FLOAT,false,stride*gl.FLOAT.size,sum);//注意gl.FLOAT对应的是32位浮点！
+        const size=AttribArray.BYTES_PER_ELEMENT;
+        gl.vertexAttribPointer(Shader.AttribLoc[i][1],sz,gl.FLOAT,false,stride*size,sum*size);//注意gl.FLOAT对应的是32位浮点！
         gl.enableVertexAttribArray(Shader.AttribLoc[i][1]);
+        sum+=sz;
     }
     const EBO=gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,EBO);
