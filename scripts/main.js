@@ -3,7 +3,7 @@ let view=mat4.create();
 let proj=mat4.create();
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
-let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,contATKEndFrame;
+let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let inAir=false;
 let stamina=-0.5;
 cameraPos=[0.0,0.0,2.0];
@@ -69,16 +69,16 @@ function processInput(currentFrame)
 			if(cameraPos[0]>9.5)cameraPos[0]=9.5;
 			if(cameraPos[2]< -9.5)cameraPos[2]=-9.5;
 			if(cameraPos[2]>9.5)cameraPos[2]=9.5;
-		//	stamina -= 0.1;
+			stamina -= 0.1;
 		}
 	}
 	if (MLB)
 	{
-		if (currentFrame > ATKEndFrame)
+		if (currentFrame > ATKEndFrame)//更新攻击结束帧
 		{
-			if (currentFrame <= ATKEndFrame + 0.2&&contATKEndFrame<ATKEndFrame)
-                contATKEndFrame = ATKEndFrame + 0.5;
-			else if(currentFrame>contATKEndFrame+0.2)ATKEndFrame = currentFrame + 0.3;
+			ATKEndFrame=currentFrame+0.3;
+			if(currentFrame<ATKEndFrame+0.2)ATKopt^=1;
+			else ATKopt=0;
 		}
 	}
 }
@@ -101,32 +101,36 @@ function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变
 function Rotate(M,p,theta,A)//使得物体绕着自身坐标系中的p点A轴旋转，p为零向量时等效于glm的rotate
 {
 	M = mat4.rotate(M, M, theta,A);//注意这种情况下是先旋转再平移
-	M = mat4.translate(M,M,-p);
+	p[0]=-p[0];
+	p[1]=-p[1];
+	p[2]=-p[2];
+	M = mat4.translate(M,M,p);
 	return M;
 }
 function initSwdModel(currentFrame)
 {
 	let model=mat4.create();
-	if (currentFrame <= ATKEndFrame)//初次攻击状态
+	if (currentFrame <= ATKEndFrame)//攻击状态
 	{
-		model = mat4.translate(model,model, vec3.clone([-0.1, -0.2, -0.2]));
-		const theta = ATKEndFrame - currentFrame;
-		console.log(currentFrame,ATKEndFrame,contATKEndFrame);
-		model = mat4.rotate(model,model, -45.0*Math.PI/180, vec3.clone([0.0,0.0,1.0]));
-		model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*(0.3-theta), vec3.clone([1.0,0.0,0.0]));
-	}
-	else if(currentFrame > ATKEndFrame+0.2)
-	{
-		if (currentFrame <= contATKEndFrame)//正处于连击状态
+		if(currentFrame>=ATKEndFrame-0.3)
 		{
-			model = mat4.translate(model,model, vec3.clone([0.1, 0.0, -0.2]));
-			const theta = contATKEndFrame - currentFrame;
-			model = mat4.rotate(model,model, 110.0*Math.PI/180, vec3.clone([0.0, 0.0, 1.0]));
-			model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*( 0.3 - theta), vec3.clone([-1.0,0.0,0.0]));
+			const theta = ATKEndFrame - currentFrame;
+			if(!ATKopt)
+			{
+				model = mat4.translate(model,model, vec3.clone([-0.1, -0.2, -0.2]));
+				model = mat4.rotate(model,model, -45.0*Math.PI/180, vec3.clone([0.0,0.0,1.0]));
+				model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*(0.3-theta), vec3.clone([-1.0,0.0,0.0]));
+			}
+			else
+			{
+				model = mat4.translate(model,model, vec3.clone([0.1, 0.0, -0.2]));
+				model = mat4.rotate(model,model, 110.0*Math.PI/180, vec3.clone([0.0, 0.0, 1.0]));
+				model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*( 0.3 - theta), vec3.clone([-1.0,0.0,0.0]));
+			}
 		}
-		else if (currentFrame <= contATKEndFrame + 0.2)model = mat4.set(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);//第一刀和第二刀中间的硬直
-		else model = mat4.translate(model,model, vec3.clone([0.3, -0.2, -0.5]));//结束了第二刀，处于未攻击状态
+		else mat4.set(model,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
+	else model = mat4.translate(model,model, vec3.clone([0.3, -0.2, -0.5]));//结束了第二刀，处于未攻击状态
 	mat4.scale(model,model,vec3.clone([0.05,0.05,0.05]));
 	return model;
 }
@@ -143,8 +147,12 @@ function main()
 	const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
 	const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
 	const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
+	const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
+	const HPVAO=initModel(gl,BarShader,HPver,BarIdx);
+	const SPVAO=initModel(gl,BarShader,SPver,BarIdx);
     let lastFrame=0;
-	ATKEndFrame=contATKEndFrame=0;
+	ATKEndFrame=0;
+	ATKopt=1;
 	console.log("Start Game Loop");
     function render(currentFrame)
     {
@@ -168,7 +176,9 @@ function main()
 		gl.enable(gl.DEPTH_TEST);
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
 		const swordModel=initSwdModel(currentFrame);
-		const SwordVar=[['mat4',view],['mat4',proj],['mat4',swordModel]];
+		const SwordVar=[['mat4',proj],['mat4',swordModel]];
+		gl.bufferSubData();
+		gl.bufferSubData();
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
         requestAnimationFrame(render);
