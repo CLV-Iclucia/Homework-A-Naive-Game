@@ -4,6 +4,7 @@ let proj=mat4.create();
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
+let bossModel=mat4.create();
 let inAir=false;
 let stamina=-0.5;
 cameraPos=[0.0,0.0,2.0];
@@ -69,7 +70,7 @@ function processInput(currentFrame)
 			if(cameraPos[0]>9.5)cameraPos[0]=9.5;
 			if(cameraPos[2]< -9.5)cameraPos[2]=-9.5;
 			if(cameraPos[2]>9.5)cameraPos[2]=9.5;
-			stamina -= 0.1;
+			// stamina -= 0.1;
 		}
 	}
 	if (MLB)
@@ -143,13 +144,15 @@ function main()
         return;
     }
     const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
+	const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
     const SkyBoxTex=initSkyBoxTexture(gl);
 	const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
 	const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
 	const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
-	const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
-	const HPVAO=initModel(gl,BarShader,HPver,BarIdx);
-	const SPVAO=initModel(gl,BarShader,SPver,BarIdx);
+	const BossVAO=initModel(gl,BossShader,BossVer,BoxIdx);
+	//const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
+	//const HPVAO=initModel(gl,BarShader,HPver,BarIdx);
+	//const SPVAO=initModel(gl,BarShader,SPver,BarIdx);
     let lastFrame=0;
 	ATKEndFrame=0;
 	ATKopt=1;
@@ -177,10 +180,16 @@ function main()
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
 		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
-		gl.bufferSubData();
-		gl.bufferSubData();
-		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
+		const ang=Math.sin(Math.currentFrame);
+		mat4.rotateX(bossModel,bossModel,0.01*Math.sin(3*currentFrame));
+		mat4.rotateY(bossModel,bossModel,0.02*Math.sin(7*currentFrame));
+		mat4.rotateZ(bossModel,bossModel,0.03*Math.sin(11*currentFrame));
+		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel]];
+		//gl.bufferSubData();
+		//gl.bufferSubData();
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
+		renderObject(BossShader,BossVar,BossVAO,36);
+		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
         requestAnimationFrame(render);
     }
     requestAnimationFrame(render);
