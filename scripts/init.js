@@ -15,6 +15,11 @@ function isword(ch)
 {
     return (ch>='0'&&ch<='9')||(ch>='A'&&ch<='Z')||(ch>='a'&&ch<='z');
 }
+function istype(word)
+{
+    const tmp=word.substr(0,3);
+    return tmp=='vec'||tmp=='mat'||tmp=='sam';
+}
 function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对象中存储uniform变量地址和attribute变量地址
 {
     const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vshader);
@@ -28,48 +33,58 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         alert('Unable to initialize the shader program: ');
         return null;
     }
-    let j,varType=-1,Type,matchName=false;
+    let j;
     let UniformVar=new Array(),AttributeVar=new Array();
     for(let i=0;i<vshader.length;i=j+1)//从顶点着色器程序中读取出attribute变量和uniform变量
     {
         j=i;
         while(isword(vshader[j]))j++;
-        const word=vshader.substr(i,j-i);
+        let word=vshader.substr(i,j-i);
         if(word=='void')break;
-        if(matchName)
+        if(word=='uniform')
         {
-            if(!varType)UniformVar.push(gl.getUniformLocation(ID,word));
-            else 
+            while(!istype(word))
             {
-                AttributeVar.push([Number(Type[3]),gl.getAttribLocation(ID,word)]);
-                console.log(word);
+                i=j+1;j=i;
+                while(isword(vshader[j]))j++;
+                word=vshader.substr(i,j-i);
             }
-            matchName=false;
-            varType=-1;
+            i=j+1;j=i;
+            while(isword(vshader[j]))j++;
+            word=vshader.substr(i,j-i);
+            UniformVar.push(gl.getUniformLocation(ID,word));
         }
-        if(varType>=0)
+        if(word=='attribute')
         {
+            i=j+1;j=i;
+            while(isword(vshader[j]))j++;
+            word=vshader.substr(i,j-i);
             Type=word;
-            matchName=true;
+            i=j+1;j=i;
+            while(isword(vshader[j]))j++;
+            word=vshader.substr(i,j-i);
+            AttributeVar.push([Number(Type[3]),gl.getAttribLocation(ID,word)]);
         }
-        if(word=='uniform')varType=0;
-        if(word=='attribute')varType=1;
     }
-    varType=false;
     for(let i=0;i<fshader.length;i=j+1)//从片段着色器程序中读取出uniform变量
     {
         j=i;
         while(isword(fshader[j]))j++;
-        const word=fshader.substr(i,j-i);
+        let word=fshader.substr(i,j-i);
         if(word=='void')break;
-        if(matchName)
+        if(word=='uniform')
         {
+            while(!istype(word))
+            {
+                i=j+1;j=i;
+                while(isword(fshader[j]))j++;
+                word=fshader.substr(i,j-i);
+            }
+            i=j+1;j=i;
+            while(isword(fshader[j]))j++;
+            word=fshader.substr(i,j-i);
             UniformVar.push(gl.getUniformLocation(ID,word));
-            matchName=false;
-            varType=false;
         }
-        if(varType)matchName=true;
-        if(word=='uniform')varType=true;
     }
     return {
         shader:ID,

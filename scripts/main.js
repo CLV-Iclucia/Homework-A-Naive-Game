@@ -32,19 +32,19 @@ function processInput(currentFrame)
 		if (S)vec3.scaleAndAdd(cameraPos,cameraPos,dir,-spd);
 		if (A)vec3.scaleAndAdd(cameraPos,cameraPos,vdir,spd);
 		if (D)vec3.scaleAndAdd(cameraPos,cameraPos,vdir,-spd);
-		if(cameraPos[0]< -9.5)cameraPos[0]=-9.5;
-		if(cameraPos[0]>9.5)cameraPos[0]=9.5;
-		if(cameraPos[2]< -9.5)cameraPos[2]=-9.5;
-		if(cameraPos[2]>9.5)cameraPos[2]=9.5;
+		if(cameraPos[0]< -35.5)cameraPos[0]=-35.5;
+		if(cameraPos[0]>35.5)cameraPos[0]=35.5;
+		if(cameraPos[2]< -35.5)cameraPos[2]=-35.5;
+		if(cameraPos[2]>35.5)cameraPos[2]=35.5;
 	}
 	else
 	{
 		spd = 10.0*deltaFrame;
         vec3.scaleAndAdd(cameraPos,cameraPos,dashDir,spd);
-		if(cameraPos[0]< -9.5)cameraPos[0]=-9.5;
-		if(cameraPos[0]>9.5)cameraPos[0]=9.5;
-		if(cameraPos[2]< -9.5)cameraPos[2]=-9.5;
-		if(cameraPos[2]>9.5)cameraPos[2]=9.5;
+		if(cameraPos[0]< -35.5)cameraPos[0]=-35.5;
+		if(cameraPos[0]>35.5)cameraPos[0]=35.5;
+		if(cameraPos[2]< -35.5)cameraPos[2]=-35.5;
+		if(cameraPos[2]>35.5)cameraPos[2]=35.5;
 	}
 	if (SPACE)
 	{
@@ -66,10 +66,10 @@ function processInput(currentFrame)
 			if (D)vec3.subtract(dashDir,dashDir,vdir);
 			if (vec3.equals(dashDir,[0.0,0.0,0.0]))dashDir=dir;
 			else vec3.normalize(dashDir,dashDir);
-			if(cameraPos[0]< -9.5)cameraPos[0]=-9.5;
-			if(cameraPos[0]>9.5)cameraPos[0]=9.5;
-			if(cameraPos[2]< -9.5)cameraPos[2]=-9.5;
-			if(cameraPos[2]>9.5)cameraPos[2]=9.5;
+			if(cameraPos[0]< -35.5)cameraPos[0]=-35.5;
+			if(cameraPos[0]>35.5)cameraPos[0]=35.5;
+			if(cameraPos[2]< -35.5)cameraPos[2]=-35.5;
+			if(cameraPos[2]>35.5)cameraPos[2]=35.5;
 			// stamina -= 0.1;
 		}
 	}
@@ -89,10 +89,12 @@ function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变
 	for(let i=0;i<UniVar.length;i++)
 	{
 		const u=UniVar[i];
+		console.log(u);
 		if(u[0]=='mat4')gl.uniformMatrix4fv(Shader.UniLoc[i],false,u[1]);
 		else if(u[0]=='mat3')gl.uniformMatrix3fv(Shader.UniLoc[i],false,u[1]);
-		else if(u[0]=='vec4')gl.uniform4fv(Shader.UniLoc[i],u[1]);
-		else if(u[0]=='vec3')gl.uniform3fv(Shader.UniLoc[i],u[1]);
+		else if(u[0]=='vec4')gl.uniform4f(Shader.UniLoc[i],u[1][0],u[1][1],u[1][2],u[1][3]);
+		else if(u[0]=='vec3')gl.uniform3f(Shader.UniLoc[i],u[1][0],u[1][1],u[1][2]);
+		else if(u[0]=='vec2')gl.uniform2f(Shader.UniLoc[i],u[1][0],u[1][1]);
 		else gl.uniform1i(Shader.UniLoc[i],u[1]);
 	}
 	gl.bindVertexArray(VAO);
@@ -131,7 +133,11 @@ function initSwdModel(currentFrame)
 		}
 		else mat4.set(model,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
 	}
-	else model = mat4.translate(model,model, vec3.clone([0.3, -0.2, -0.5]));//结束了第二刀，处于未攻击状态
+	else 
+	{
+		model = mat4.translate(model,model, vec3.clone([0.3, -0.2, -0.5]));//结束了第二刀，处于未攻击状态
+		ATKopt=1;
+	}
 	mat4.scale(model,model,vec3.clone([0.05,0.05,0.05]));
 	return model;
 }
@@ -147,9 +153,10 @@ function main()
 	const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
     const SkyBoxTex=initSkyBoxTexture(gl);
 	const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
+	const BossHeadTex=initTex(gl,"head");
 	const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
 	const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
-	const BossVAO=initModel(gl,BossShader,BossVer,BoxIdx);
+	const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx);
 	//const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
 	//const HPVAO=initModel(gl,BarShader,HPver,BarIdx);
 	//const SPVAO=initModel(gl,BarShader,SPver,BarIdx);
@@ -166,7 +173,7 @@ function main()
         if (inAir)
 	    {
             vec3.add(cameraPos,cameraPos,vec3.scale(tmp,cameraUp,0.2*velocity*deltaFrame));
-	    	velocity -= 1.0;
+	    	velocity -= 1.5;
 	    	if (cameraPos[1] <= 0.0)
 	    	{
 	    		cameraPos[1] = 0.0;
@@ -180,11 +187,9 @@ function main()
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
 		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
-		const ang=Math.sin(Math.currentFrame);
-		mat4.rotateX(bossModel,bossModel,0.01*Math.sin(3*currentFrame));
-		mat4.rotateY(bossModel,bossModel,0.02*Math.sin(7*currentFrame));
-		mat4.rotateZ(bossModel,bossModel,0.03*Math.sin(11*currentFrame));
-		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel]];
+		const bossModel=mat4.create();
+		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',[50,10,30]],['vec3',[1.0,0.0,0.0]]];
 		//gl.bufferSubData();
 		//gl.bufferSubData();
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
