@@ -89,7 +89,6 @@ function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变
 	for(let i=0;i<UniVar.length;i++)
 	{
 		const u=UniVar[i];
-		console.log(u);
 		if(u[0]=='mat4')gl.uniformMatrix4fv(Shader.UniLoc[i],false,u[1]);
 		else if(u[0]=='mat3')gl.uniformMatrix3fv(Shader.UniLoc[i],false,u[1]);
 		else if(u[0]=='vec4')gl.uniform4f(Shader.UniLoc[i],u[1][0],u[1][1],u[1][2],u[1][3]);
@@ -151,12 +150,15 @@ function main()
     }
     const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
 	const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
+	const FloorShader=initShader(gl,FloorVertexShader,FloorFragmentShader);
     const SkyBoxTex=initSkyBoxTexture(gl);
 	const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
-	const BossHeadTex=initTex(gl,"head");
+	const BossHeadTex=initTex(gl,"head",0);
+	const FloorTex=initTex(gl,"floor",1);
 	const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
 	const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
 	const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx);
+	const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx);
 	//const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
 	//const HPVAO=initModel(gl,BarShader,HPver,BarIdx);
 	//const SPVAO=initModel(gl,BarShader,SPver,BarIdx);
@@ -188,12 +190,15 @@ function main()
 		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const bossModel=mat4.create();
-		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
-						['vec3',cameraFront],['vec3',cameraPos],['vec3',[50,10,30]],['vec3',[1.0,0.0,0.0]]];
-		//gl.bufferSubData();
+		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',0],
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',[50,20,20]],['vec3',[1.0,0.0,0.0]]];
+		const FloorVar=[['mat4',view],['mat4',proj],['sampler',1],
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',[50,20,20]],['vec3',[1.0,0.0,0.0]]];
+						//gl.bufferSubData();
 		//gl.bufferSubData();
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
 		renderObject(BossShader,BossVar,BossVAO,36);
+		renderObject(FloorShader,FloorVar,FloorVAO,6);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
         requestAnimationFrame(render);
     }

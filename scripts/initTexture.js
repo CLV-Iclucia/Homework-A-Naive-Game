@@ -21,9 +21,11 @@ function initSkyBoxTexture(gl)
 	console.log("SkyBox loaded successfully");
 	return tex;
 }
-function initTex(gl,ID)
+function initTex(gl,ID,cnt)
 {
 	const tex=gl.createTexture();
+	gl.activeTexture(gl.TEXTURE0+cnt);
+	console.log(gl.getParameter(gl.ACTIVE_TEXTURE));
     gl.bindTexture(gl.TEXTURE_2D,tex);
     const img=document.getElementById(ID);
 	gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);//这个地方API很复杂，这么写才是比较简便并且符合API规范的
