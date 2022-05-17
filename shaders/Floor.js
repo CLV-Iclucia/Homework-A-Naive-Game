@@ -37,6 +37,6 @@ void main()
 	highp vec3 halfViewDir=normalize(lightDir-viewDir);
 	highp float specular=pow(max(0.0,dot(halfDir,aNorm)),15.0)*max(0.0,dot(halfDir,halfViewDir));//镜面反射光
 	highp float diffuse=max(0.0,dot(lightDir,aNorm));
-	highp vec3 lColor=strength*(0.5*diffuse+0.2*specular)*lightColor;
+	highp vec3 lColor=strength*(0.5*diffuse+0.5*specular)*lightColor;
 	gl_FragColor=vec4(ambientColor.x+lColor.x,ambientColor.y+lColor.y,ambientColor.z+lColor.z,1.0);
 }`

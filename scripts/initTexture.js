@@ -21,10 +21,11 @@ function initSkyBoxTexture(gl)
 	console.log("SkyBox loaded successfully");
 	return tex;
 }
-function initTex(gl,ID,cnt)
+function initTex(gl,ID)
 {
 	const tex=gl.createTexture();
-	gl.activeTexture(gl.TEXTURE0+cnt);
+	gl.activeTexture(gl.TEXTURE0+TexCnt);
+	TexCnt++;
 	console.log(gl.getParameter(gl.ACTIVE_TEXTURE));
     gl.bindTexture(gl.TEXTURE_2D,tex);
     const img=document.getElementById(ID);

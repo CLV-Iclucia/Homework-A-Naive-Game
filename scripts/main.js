@@ -1,6 +1,8 @@
 const gl=canvas.getContext("webgl2"); 
 let view=mat4.create(),Width,Height;
 let proj=mat4.create();
+const lightView=mat4.create();
+mat4.lookAt(lightView,vec3.clone([40,16,16]),vec3.clone([-40.0,-16.0,-16.0]),vec3.clone([0.0,1.0,0.0]));
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
@@ -10,6 +12,21 @@ let stamina=-0.5;
 cameraPos=[0.0,0.0,2.0];
 cameraFront=[0.0,0.0,-1.0];
 cameraUp=[0.0,1.0,0.0];
+const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
+const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
+const FloorShader=initShader(gl,FloorVertexShader,FloorFragmentShader);
+const SkyBoxTex=initSkyBoxTexture(gl);
+const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
+const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
+const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
+const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx);
+const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx);
+const ShadowShader=initShader(gl,ShadowVertexShader,ShadowFragmentShader);
+const BossVAO_S=initModel(gl,ShadowShader,BossHeadVer,BossHeadIdx);
+const FloorVAO_S=initModel(gl,ShadowShader,FloorVer,BarIdx);
+const ShadowFBO=initFrameBuffer(gl);
+const BossHeadTex=initTex(gl,"head");
+const FloorTex=initTex(gl,"floor");
 function Reset() 
 {
     canvas.height= document.documentElement.clientHeight;
@@ -84,6 +101,16 @@ function processInput(currentFrame)
 			else ATKopt=0;
 		}
 	}
+	if (inAir)
+	{
+        vec3.add(cameraPos,cameraPos,vec3.scale(tmp,cameraUp,0.2*velocity*deltaFrame));
+		velocity -= 1.5;
+		if (cameraPos[1] <= 0.0)
+		{
+			cameraPos[1] = 0.0;
+			inAir = 0;
+		}
+    }
 }
 function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变量列表，顶点数组对象VAO和三角面个数tot来绘制对象
 {
@@ -150,17 +177,6 @@ function main()
         alert("无法初始化WebGL，你的浏览器、操作系统或硬件等可能不支持WebGL。");
         return;
     }
-    const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
-	const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
-	const FloorShader=initShader(gl,FloorVertexShader,FloorFragmentShader);
-    const SkyBoxTex=initSkyBoxTexture(gl);
-	const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
-	const BossHeadTex=initTex(gl,"head",0);
-	const FloorTex=initTex(gl,"floor",1);
-	const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
-	const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
-	const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx);
-	const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx);
 	//const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
 	//const HPVAO=initModel(gl,BarShader,HPver,BarIdx);
 	//const SPVAO=initModel(gl,BarShader,SPver,BarIdx);
@@ -174,27 +190,25 @@ function main()
         deltaFrame=currentFrame-lastFrame;
         lastFrame=currentFrame;
         processInput(currentFrame);
-        if (inAir)
-	    {
-            vec3.add(cameraPos,cameraPos,vec3.scale(tmp,cameraUp,0.2*velocity*deltaFrame));
-	    	velocity -= 1.5;
-	    	if (cameraPos[1] <= 0.0)
-	    	{
-	    		cameraPos[1] = 0.0;
-	    		inAir = 0;
-	    	}
-    	}
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        gl.clear(gl.COLOR_BUFFER_BIT);
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
+		gl.bindFramebuffer(gl.FRAMEBUFFER,ShadowFBO);
+		gl.clearColor(0.0,0.0,0.0,1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.enable(gl.DEPTH_TEST);
+		const Var=[['mat4',lightView],['mat4',proj],['mat4',mat4.create()]];
+		render2FBO(gl,BossVAO_S,ShadowShader,Var,36);
+		render2FBO(gl,FloorVAO_S,ShadowShader,Var,6);
+		gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
 		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const bossModel=mat4.create();
-		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',0],
+		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',1],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
-		const FloorVar=[['mat4',view],['mat4',proj],['sampler',1],
+		const FloorVar=[['mat4',view],['mat4',proj],['sampler',2],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
 						//gl.bufferSubData();
 		//gl.bufferSubData();

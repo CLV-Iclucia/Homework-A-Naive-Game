@@ -1,18 +1,18 @@
-const BossVertexBuffer_S=
+const ShadowVertexShader=
 `attribute vec3 vPos;
 uniform mat4 view;
 uniform mat4 proj;
 uniform mat4 model;
-varying highp vec3 aPos;
+varying highp vec4 aPos;
 void main()
 {
     gl_Position=proj*view*model*vec4(vPos.x,vPos.y,vPos.z,1.0);
-    aPos=vec3(gl_Position.x,gl_Position.y,gl_Position.z);
+    aPos=gl_Position;
 }`
 
-const BossFragmentShader_S=
-`varying vec3 aPos;
+const ShadowFragmentShader=
+`varying highp vec4 aPos;
 void main()
 {
-    gl_FragCoord=aPos.z;
+    gl_FragColor=vec4(0.0,0.0,0.0,aPos.z);
 }`
