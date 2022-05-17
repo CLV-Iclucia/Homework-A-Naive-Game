@@ -1,5 +1,5 @@
 const gl=canvas.getContext("webgl2"); 
-let view=mat4.create();
+let view=mat4.create(),Width,Height;
 let proj=mat4.create();
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
@@ -14,6 +14,8 @@ function Reset()
 {
     canvas.height= document.documentElement.clientHeight;
     canvas.width = document.documentElement.clientWidth; 
+	Width=canvas.width;
+	Height=canvas.height;
     gl.viewport(0,0,canvas.width,canvas.height);
 }
 function processInput(currentFrame)
@@ -191,9 +193,9 @@ function main()
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const bossModel=mat4.create();
 		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',0],
-						['vec3',cameraFront],['vec3',cameraPos],['vec3',[50,20,20]],['vec3',[1.0,0.0,0.0]]];
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
 		const FloorVar=[['mat4',view],['mat4',proj],['sampler',1],
-						['vec3',cameraFront],['vec3',cameraPos],['vec3',[50,20,20]],['vec3',[1.0,0.0,0.0]]];
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
 						//gl.bufferSubData();
 		//gl.bufferSubData();
 		renderObject(SwordShader,SwordVar,SwordVAO,558);

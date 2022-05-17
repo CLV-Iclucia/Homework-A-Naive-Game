@@ -29,11 +29,11 @@ void main()
 	highp vec3 aPos=vec3(verPos.x,verPos.y,verPos.z);
 	highp vec4 ambientColor=texture2D(myTex,aTexCoord);
 	ambientColor.x*=0.2;
-	if(ambientColor.y+ambientColor.z<0.8)
-	{
+//	if(ambientColor.y+ambientColor.z<0.8)
+//	{
 		ambientColor.y*=0.2;
 		ambientColor.z*=0.2;
-	}
+//	}
 	highp float strength=length(lightPos-aPos);
 	strength=1500.0/(strength*strength);
 	highp vec3 lightDir=normalize(lightPos-aPos);
