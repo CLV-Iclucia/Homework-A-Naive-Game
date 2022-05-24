@@ -1,9 +1,16 @@
 const gl=canvas.getContext("webgl2"); 
-let view=mat4.create(),Width,Height;
+function Reset() 
+{
+    canvas.height= document.documentElement.clientHeight;
+    canvas.width = document.documentElement.clientWidth; 
+    gl.viewport(0,0,canvas.width,canvas.height);
+	console.log("changed!");
+}
+let view=mat4.create();
 let proj=mat4.create();
 const lightView=mat4.create();
-mat4.lookAt(lightView,vec3.clone([40,16,16]),vec3.clone([-40.0,-16.0,-16.0]),vec3.clone([0.0,1.0,0.0]));
-mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
+mat4.lookAt(lightView,vec3.clone([40,16,16]),vec3.clone([0.0,0.0,0.0]),vec3.clone([0.0,1.0,0.0]));
+mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.5,200.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let bossModel=mat4.create();
@@ -16,25 +23,13 @@ const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
 const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
 const FloorShader=initShader(gl,FloorVertexShader,FloorFragmentShader);
 const SkyBoxTex=initSkyBoxTexture(gl);
-const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx);
+const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx,3);
 const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
-const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx);
-const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx);
-const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx);
-const ShadowShader=initShader(gl,ShadowVertexShader,ShadowFragmentShader);
-const BossVAO_S=initModel(gl,ShadowShader,BossHeadVer,BossHeadIdx);
-const FloorVAO_S=initModel(gl,ShadowShader,FloorVer,BarIdx);
-const ShadowFBO=initFrameBuffer(gl);
+const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx,6);
+const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx,8);
+const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx,5);
 const BossHeadTex=initTex(gl,"head");
 const FloorTex=initTex(gl,"floor");
-function Reset() 
-{
-    canvas.height= document.documentElement.clientHeight;
-    canvas.width = document.documentElement.clientWidth; 
-	Width=canvas.width;
-	Height=canvas.height;
-    gl.viewport(0,0,canvas.width,canvas.height);
-}
 function processInput(currentFrame)
 {
     let dir=vec3.create(),vdir=vec3.create();
@@ -112,7 +107,7 @@ function processInput(currentFrame)
 		}
     }
 }
-function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变量列表，顶点数组对象VAO和三角面个数tot来绘制对象
+function renderObject(Shader,UniVar,VAO,tot,Tex=null)//传入着色器程序，uniform变量列表，顶点数组对象VAO和三角面个数tot来绘制对象
 {
 	gl.useProgram(Shader.shader);
 	for(let i=0;i<UniVar.length;i++)
@@ -125,9 +120,11 @@ function renderObject(Shader,UniVar,VAO,tot)//传入着色器程序，uniform变
 		else if(u[0]=='vec2')gl.uniform2f(Shader.UniLoc[i],u[1][0],u[1][1]);
 		else gl.uniform1i(Shader.UniLoc[i],u[1]);
 	}
+	gl.bindTexture(gl.TEXTURE_2D,Tex);
 	gl.bindVertexArray(VAO);
     gl.drawElements(gl.TRIANGLES,tot,gl.UNSIGNED_SHORT,0);//统一使用顶点索引绘制
 	gl.bindVertexArray(null);
+	gl.bindTexture(gl.TEXTURE_2D,null);
 }
 function Rotate(M,p,theta,A)//使得物体绕着自身坐标系中的p点A轴旋转，p为零向量时等效于glm的rotate
 {
@@ -169,6 +166,7 @@ function initSwdModel(currentFrame)
 	mat4.scale(model,model,vec3.clone([0.05,0.05,0.05]));
 	return model;
 }
+
 function main()
 {
     Reset();
@@ -184,6 +182,10 @@ function main()
 	ATKEndFrame=0;
 	ATKopt=1;
 	console.log("Start Game Loop");
+	const ShadowShader=initShader(gl,ShadowVertexShader,ShadowFragmentShader);
+	const BossVAO_S=initModel(gl,ShadowShader,BossHeadVer,BossHeadIdx,8);
+	const FloorVAO_S=initModel(gl,ShadowShader,FloorVer,BarIdx,5);
+	const ShadowFBO=initFrameBuffer(gl);
     function render(currentFrame)
     {
         currentFrame*=0.001;
@@ -192,13 +194,15 @@ function main()
         processInput(currentFrame);
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
 		gl.bindFramebuffer(gl.FRAMEBUFFER,ShadowFBO);
+		gl.viewport(0,0,canvas.width,canvas.height);
 		gl.clearColor(0.0,0.0,0.0,1.0);
-		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.clear(gl.COLOR_BUFFER5_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
 		const Var=[['mat4',lightView],['mat4',proj],['mat4',mat4.create()]];
-		render2FBO(gl,BossVAO_S,ShadowShader,Var,36);
-		render2FBO(gl,FloorVAO_S,ShadowShader,Var,6);
+		renderObject(ShadowShader,Var,FloorVAO_S,6,ShadowFBO.texture);
+		renderObject(ShadowShader,Var,BossVAO_S,36,ShadowFBO.texture);
 		gl.bindFramebuffer(gl.FRAMEBUFFER,null);
+		gl.viewport(0,0,canvas.width,canvas.height);
 		gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
@@ -206,15 +210,15 @@ function main()
 		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const bossModel=mat4.create();
-		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',1],
+		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',0],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
-		const FloorVar=[['mat4',view],['mat4',proj],['sampler',2],
+		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['sampler',1],['sampler',2],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
 						//gl.bufferSubData();
 		//gl.bufferSubData();
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
 		renderObject(BossShader,BossVar,BossVAO,36);
-		renderObject(FloorShader,FloorVar,FloorVAO,6);
+		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
         requestAnimationFrame(render);
     }

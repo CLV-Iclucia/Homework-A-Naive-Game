@@ -3,16 +3,24 @@ const ShadowVertexShader=
 uniform mat4 view;
 uniform mat4 proj;
 uniform mat4 model;
-varying highp vec4 aPos;
+highp float linearize(highp float depth)
+{
+	highp float z = depth * 2.0 - 1.0;
+    return (20.0) / (100.1 - z * 99.9);    
+}
 void main()
 {
     gl_Position=proj*view*model*vec4(vPos.x,vPos.y,vPos.z,1.0);
-    aPos=gl_Position;
 }`
 
 const ShadowFragmentShader=
-`varying highp vec4 aPos;
+`highp float linearize(highp float depth)
+{
+	highp float z = depth * 2.0 - 1.0;
+    return 0.4 / (200.5 - z * 199.5);    
+}
 void main()
 {
-    gl_FragColor=vec4(0.0,0.0,0.0,aPos.z);
+    highp float Z=linearize(gl_FragCoord.z);
+    gl_FragColor=vec4(Z,Z,Z,1.0);
 }`

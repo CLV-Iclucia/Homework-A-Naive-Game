@@ -92,24 +92,23 @@ function initShader(gl,vshader,fshader)//返回着色器程序,在返回的对�
         AttribLoc:AttributeVar,
     };
 }
-function initModel(gl,Shader,attrib,idx)
+function initModel(gl,Shader,attrib,idx,stride)//stride是取参数的步长
 {
     const VBO=gl.createBuffer();
     const VAO=gl.createVertexArray();
     gl.bindVertexArray(VAO);
     gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
     const AttribArray=new Float32Array(attrib);
-    console.log(AttribArray);
     gl.bufferData(gl.ARRAY_BUFFER,AttribArray,gl.STATIC_DRAW);
     const attributeCnt=Shader.AttribLoc.length;
-    let sum=0,stride=0;
-    for(let i=0;i<attributeCnt;i++)stride+=Shader.AttribLoc[i][0];
+    let sum=0;
     for(let i=0;i<attributeCnt;i++)
     {
         const sz=Shader.AttribLoc[i][0];
         const size=AttribArray.BYTES_PER_ELEMENT;
         gl.vertexAttribPointer(Shader.AttribLoc[i][1],sz,gl.FLOAT,false,stride*size,sum*size);//注意gl.FLOAT对应的是32位浮点！
         gl.enableVertexAttribArray(Shader.AttribLoc[i][1]);
+        console.log(sz);
         sum+=sz;
     }
     const EBO=gl.createBuffer();
