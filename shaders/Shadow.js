@@ -17,7 +17,7 @@ const ShadowFragmentShader=
 `highp float linearize(highp float depth)
 {
 	highp float z = depth * 2.0 - 1.0;
-    return 0.4 / (200.5 - z * 199.5);    
+    return 0.4 / (200.1 - z * 199.9);    
 }
 void main()
 {

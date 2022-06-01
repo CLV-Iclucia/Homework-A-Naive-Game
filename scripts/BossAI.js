@@ -1,0 +1,4 @@
+function laser(pos)
+{
+    
+}

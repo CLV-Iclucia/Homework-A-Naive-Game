@@ -27,23 +27,71 @@ uniform highp vec3 viewDir;
 uniform highp vec3 viewPos;
 uniform	highp vec3 lightPos;
 uniform highp vec3 lightColor;
+uniform highp vec2 pixelSize;
+const highp float lightSrcWidth=0.8;
+const highp float eps=0.0035;
+highp float Z;//这是当前片段线性化并且归一化以后的深度
+highp vec3 lightSpaceCoord;
+highp vec4 opt=vec4(1.0,1.0,1.0,1.0);
 highp float linearize(highp float depth)
 {
 	highp float z = depth * 2.0 - 1.0;
-    return 0.4 / (200.5 - z * 199.5);    
+    return 0.4 / (200.1 - z * 199.9);//压缩至原来线性化深度的1/25
 }
-highp float renderShadow()
+highp float renderShadow(highp vec2 offset)
 {
-	highp vec3 lightSpaceCoord=lightSpacePos.xyz/lightSpacePos.w;
-	lightSpaceCoord=0.5*lightSpaceCoord+0.5;//将三个维度坐标都要归一化
-	highp float Z=linearize(lightSpaceCoord.z);
-	highp float lightSpaceDepth=texture2D(ShadowMap,lightSpaceCoord.xy).x;
-	return lightSpaceDepth+0.0025<Z?0.01:1.0;
+	highp vec3 tmpCoord=vec3((lightSpaceCoord.xy+0.5*offset).xy,lightSpaceCoord.z);
+	highp float lightSpaceDepth=texture2D(ShadowMap,tmpCoord.xy).x;
+	return lightSpaceDepth+eps<Z?0.0:1.0;
+}
+highp vec2 OSR[2];//Occlusion Searching Region
+highp float getLightSpaceDepth(highp vec2 pos)
+{
+	return texture2D(ShadowMap,pos).x;
 }
 void main()
 {
 	highp vec3 aPos=verPos.xyz;
-	highp float sd=renderShadow();
+	lightSpaceCoord=lightSpacePos.xyz/lightSpacePos.w;
+	highp float shadow=0.0;
+	lightSpaceCoord=0.5*lightSpaceCoord+0.5;
+	Z=linearize(lightSpaceCoord.z);
+	highp float aveDepth=0.0;
+	int cnt=0;
+	for(int i=-2;i<=2;i++)
+		for(int j=-2;j<=2;j++)
+		{
+			highp float tmpDepth=getLightSpaceDepth(lightSpaceCoord.xy+vec2(float(i),float(j))*pixelSize);
+			if(tmpDepth+eps<Z)//如果挡住了，计入遮挡体深度
+			{
+				aveDepth+=tmpDepth;
+				cnt++;
+			}
+		}
+	if(cnt>0)
+	{
+		aveDepth/=float(cnt);//得到了平均遮挡体平面
+		highp float fuck=(Z-aveDepth)*lightSrcWidth/(aveDepth+0.02)*0.03/(Z+0.02)/pixelSize.y;
+		opt=vec4(1.0,1.0,1.0,1.0);
+		int Penumbra=int(fuck);//得到了半影宽度
+		if(Penumbra==0)shadow=renderShadow(vec2(0.0,0.0));
+		else
+		{
+			//discard;
+			for(int i=0;i<=2;i++)
+			{
+				for(int j=0;j<=2;j++)
+				{
+					shadow+=renderShadow(vec2(float(i)*pixelSize.x,float(j)*pixelSize.y));
+					shadow+=renderShadow(vec2(float(-i)*pixelSize.x,float(j)*pixelSize.y));
+					shadow+=renderShadow(vec2(float(i)*pixelSize.x,float(-j)*pixelSize.y));
+					shadow+=renderShadow(vec2(float(-i)*pixelSize.x,float(-j)*pixelSize.y));
+				}
+			}
+			shadow/=float((Penumbra*2+1)*(Penumbra*2+1));
+		}
+	}
+	else shadow=1.0;
 	highp vec3 ambientColor=texture2D(myTex,aTexCoord).xyz;
 	if(ambientColor.x<0.5)ambientColor.x*=0.2;
 	ambientColor.y*=0.2;
@@ -57,5 +105,5 @@ void main()
 	highp float specular=pow(max(0.0,dot(halfDir,aNorm)),15.0)*max(0.0,dot(halfDir,halfViewDir));//镜面反射光
 	highp float diffuse=max(0.0,dot(lightDir,aNorm));
 	highp vec3 lColor=strength*(0.5*diffuse+0.2*specular)*lightColor;
-	gl_FragColor=vec4(sd*(ambientColor+lColor).xyz,1.0);
+	gl_FragColor=vec4(shadow*(ambientColor+lColor).xyz,1.0);
 }`

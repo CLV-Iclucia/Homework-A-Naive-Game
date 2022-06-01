@@ -10,7 +10,7 @@ let view=mat4.create();
 let proj=mat4.create();
 const lightView=mat4.create();
 mat4.lookAt(lightView,vec3.clone([40,16,16]),vec3.clone([0.0,0.0,0.0]),vec3.clone([0.0,1.0,0.0]));
-mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.5,200.0);
+mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,200.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let bossModel=mat4.create();
@@ -213,7 +213,7 @@ function main()
 		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',0],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
 		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['sampler',1],['sampler',2],
-						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
 						//gl.bufferSubData();
 		//gl.bufferSubData();
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
