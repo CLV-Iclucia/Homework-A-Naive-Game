@@ -16,6 +16,8 @@ let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create()
 let bossModel=mat4.create();
 let inAir=false;
 let stamina=-0.5;
+let BossPos=vec3.fromValues(0.0,0.0,0.0);
+let phase=1;
 cameraPos=[0.0,0.0,2.0];
 cameraFront=[0.0,0.0,-1.0];
 cameraUp=[0.0,1.0,0.0];
@@ -30,6 +32,14 @@ const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx,8);
 const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx,5);
 const BossHeadTex=initTex(gl,"head");
 const FloorTex=initTex(gl,"floor");
+const CircleShader=initShader(gl,CircleVertexShader,CircleFragmentShader);
+const CircleVAO=initModel(gl,CircleShader,TexSq,BarIdx,5);
+const CircleTex=initTex(gl,"ring");
+const LaserShader=initShader(gl,LaserVertexShader,LaserFragmentShader);
+const LaserVAO=initModel(gl,LaserShader,Cylinder,CylinderIdx,3);
+let CircleQ=new Queue();//这些队列都用于存放并管理当前特效
+let CylinderQ=new Queue();
+let ConeQ=new Queue();
 function processInput(currentFrame)
 {
     let dir=vec3.create(),vdir=vec3.create();
@@ -166,7 +176,6 @@ function initSwdModel(currentFrame)
 	mat4.scale(model,model,vec3.clone([0.05,0.05,0.05]));
 	return model;
 }
-
 function main()
 {
     Reset();
@@ -210,12 +219,16 @@ function main()
 		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const bossModel=mat4.create();
-		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',0],
+		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
-		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['sampler',1],['sampler',2],
+		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['sampler',FloorTex],['sampler',TexCnt-1],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
 						//gl.bufferSubData();
 		//gl.bufferSubData();
+		const opt=Math.floor(Math.random()*100);
+		if(opt==1)genLaser(currentFrame);
+		renderCircle(currentFrame);
+		renderLaser(currentFrame);
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
 		renderObject(BossShader,BossVar,BossVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);

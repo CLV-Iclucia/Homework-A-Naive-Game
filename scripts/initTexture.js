@@ -37,5 +37,5 @@ function initTex(gl,ID)
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
 	console.log(img.id+" loaded successfully");
-	return tex;
+	return TexCnt-1;
 }
