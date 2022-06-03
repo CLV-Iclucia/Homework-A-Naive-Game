@@ -1,5 +1,5 @@
 const gl=canvas.getContext("webgl2"); 
-function Reset() 
+function Reset()
 {
     canvas.height= document.documentElement.clientHeight;
     canvas.width = document.documentElement.clientWidth; 
@@ -9,15 +9,17 @@ function Reset()
 let view=mat4.create();
 let proj=mat4.create();
 const lightView=mat4.create();
-mat4.lookAt(lightView,vec3.clone([40,16,16]),vec3.clone([0.0,0.0,0.0]),vec3.clone([0.0,1.0,0.0]));
+const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(1.0,0.0,0.0);
+mat4.lookAt(lightView,lightPos,vec3.clone([0.0,0.0,0.0]),vec3.clone([0.0,1.0,0.0]));
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,200.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let bossModel=mat4.create();
 let inAir=false;
 let stamina=-0.5;
-let BossPos=vec3.fromValues(0.0,0.0,0.0);
+let BossPos=vec3.fromValues(0.0,-0.5,0.0);
 let phase=1;
+let flg=0;
 cameraPos=[0.0,0.0,2.0];
 cameraFront=[0.0,0.0,-1.0];
 cameraUp=[0.0,1.0,0.0];
@@ -37,6 +39,8 @@ const CircleVAO=initModel(gl,CircleShader,TexSq,BarIdx,5);
 const CircleTex=initTex(gl,"ring");
 const LaserShader=initShader(gl,LaserVertexShader,LaserFragmentShader);
 const LaserVAO=initModel(gl,LaserShader,Cylinder,CylinderIdx,3);
+const ThornShader=initShader(gl,ThornVertexShader,ThornFragmentShader);
+const ThornVAO=initModel(gl,ThornShader,Cone,ConeIdx,6);
 let CircleQ=new Queue();//这些队列都用于存放并管理当前特效
 let CylinderQ=new Queue();
 let ConeQ=new Queue();
@@ -220,15 +224,21 @@ function main()
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const bossModel=mat4.create();
 		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
-						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]]];
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
 		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['sampler',FloorTex],['sampler',TexCnt-1],
-						['vec3',cameraFront],['vec3',cameraPos],['vec3',[40,16,16]],['vec3',[1.0,0.0,0.0]],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
+						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
 						//gl.bufferSubData();
 		//gl.bufferSubData();
 		const opt=Math.floor(Math.random()*100);
-		if(opt==1)genLaser(currentFrame);
+		//if(opt==1)genLaser(currentFrame);
+		if(opt==2)
+		{
+			const ang=Math.random()*2*Math.PI;
+			genThorn(currentFrame,Math.cos(ang),Math.sin(ang));
+		}
 		renderCircle(currentFrame);
 		renderLaser(currentFrame);
+		renderThorn(currentFrame);
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
 		renderObject(BossShader,BossVar,BossVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);

@@ -38,3 +38,20 @@ function genLaser(currentTime)
         sum+=Math.random()*0.3;
     }
 }
+function genThorn(currentTime,dirx,dirz)//在(dirx,dirz)方向生成一条地刺
+{
+    let sum=currentTime+0.05;
+    const dir=vec3.fromValues(3.0*dirx,0.0,3.0*dirz);
+    for(let i=1;;i++)
+    {
+        let pos=vec3.create();
+        vec3.scaleAndAdd(pos,BossPos,dir,i);
+        ConeQ.push({
+            P:pos,
+            trigTime:sum,
+            endTime:sum+8.0,
+        });
+        sum+=0.04;
+        if(Math.abs(pos[0])>35.5||Math.abs(pos[2])>35.5)break;
+    }
+}
