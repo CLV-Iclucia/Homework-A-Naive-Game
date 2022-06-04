@@ -49,7 +49,7 @@ function genThorn(currentTime,dirx,dirz)//在(dirx,dirz)方向生成一条地刺
         ConeQ.push({
             P:pos,
             trigTime:sum,
-            endTime:sum+8.0,
+            endTime:sum+4.0,
         });
         sum+=0.04;
         if(Math.abs(pos[0])>35.5||Math.abs(pos[2])>35.5)break;

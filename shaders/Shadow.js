@@ -3,11 +3,6 @@ const ShadowVertexShader=
 uniform mat4 view;
 uniform mat4 proj;
 uniform mat4 model;
-highp float linearize(highp float depth)
-{
-	highp float z = depth * 2.0 - 1.0;
-    return (20.0) / (100.1 - z * 99.9);    
-}
 void main()
 {
     gl_Position=proj*view*model*vec4(vPos.x,vPos.y,vPos.z,1.0);

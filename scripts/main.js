@@ -4,22 +4,19 @@ function Reset()
     canvas.height= document.documentElement.clientHeight;
     canvas.width = document.documentElement.clientWidth; 
     gl.viewport(0,0,canvas.width,canvas.height);
-	console.log("changed!");
 }
 let view=mat4.create();
 let proj=mat4.create();
 const lightView=mat4.create();
 const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(1.0,0.0,0.0);
-mat4.lookAt(lightView,lightPos,vec3.clone([0.0,0.0,0.0]),vec3.clone([0.0,1.0,0.0]));
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,200.0);
 let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let bossModel=mat4.create();
 let inAir=false;
 let stamina=-0.5;
-let BossPos=vec3.fromValues(0.0,-0.5,0.0);
+let BossPos=vec3.fromValues(0.0,0.0,0.0),BossDir=0;
 let phase=1;
-let flg=0;
 cameraPos=[0.0,0.0,2.0];
 cameraFront=[0.0,0.0,-1.0];
 cameraUp=[0.0,1.0,0.0];
@@ -205,14 +202,21 @@ function main()
         deltaFrame=currentFrame-lastFrame;
         lastFrame=currentFrame;
         processInput(currentFrame);
+		BossDir+=Math.random()*0.02;
+		let BossFront=vec3.fromValues(Math.cos(BossDir),0.0,Math.sin(BossDir));
+		mat4.lookAt(lightView,lightPos,BossPos,vec3.clone([0.0,1.0,0.0]));
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
+		const bossModel=mat4.create();
+		mat4.translate(bossModel,bossModel,BossPos);
+		mat4.rotate(bossModel,bossModel,BossDir,vec3.fromValues(0.0,1.0,0.0));
 		gl.bindFramebuffer(gl.FRAMEBUFFER,ShadowFBO);
 		gl.viewport(0,0,canvas.width,canvas.height);
 		gl.clearColor(0.0,0.0,0.0,1.0);
 		gl.clear(gl.COLOR_BUFFER5_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
-		const Var=[['mat4',lightView],['mat4',proj],['mat4',mat4.create()]];
+		const Var=[['mat4',lightView],['mat4',proj],['mat4',bossModel]];
 		renderObject(ShadowShader,Var,FloorVAO_S,6,ShadowFBO.texture);
+		Var[2]=[['mat4',mat4.create()]];
 		renderObject(ShadowShader,Var,BossVAO_S,36,ShadowFBO.texture);
 		gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 		gl.viewport(0,0,canvas.width,canvas.height);
@@ -222,15 +226,14 @@ function main()
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
 		const swordModel=initSwdModel(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
-		const bossModel=mat4.create();
 		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
 		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['sampler',FloorTex],['sampler',TexCnt-1],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
 						//gl.bufferSubData();
 		//gl.bufferSubData();
-		const opt=Math.floor(Math.random()*100);
-		//if(opt==1)genLaser(currentFrame);
+		const opt=Math.floor(Math.random()*500);
+		if(opt==1)genLaser(currentFrame);
 		if(opt==2)
 		{
 			const ang=Math.random()*2*Math.PI;
@@ -243,6 +246,7 @@ function main()
 		renderObject(BossShader,BossVar,BossVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
+		vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.05);
         requestAnimationFrame(render);
     }
     requestAnimationFrame(render);

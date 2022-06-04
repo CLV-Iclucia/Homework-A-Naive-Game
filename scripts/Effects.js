@@ -70,11 +70,11 @@ function renderThorn(currentTime)//渲染场景中的地刺
         if(currentTime<cmd.trigTime)break;
         let model=mat4.create();
         mat4.identity(model);
-        const alpha=(currentTime-cmd.trigTime)/0.5;
+        const alpha=(currentTime-cmd.trigTime)/4.0;
         let trans=vec3.clone(cmd.P);
-        if(alpha<0.2)trans[1]=20*alpha-5.0;
-        else if(alpha<=0.9) trans[1]=-1.0;
-        else trans[1]=-40*alpha+35.0;
+        if(alpha<0.05)trans[1]=80*alpha-5.0;
+        else if(alpha<=0.95) trans[1]=-1.0;
+        else trans[1]=-80*alpha+75.0;
         mat4.translate(model,model,trans);
         gl.uniformMatrix4fv(ThornShader.UniLoc[0],false,model);
         gl.drawElements(gl.TRIANGLES,48,gl.UNSIGNED_SHORT,0);
