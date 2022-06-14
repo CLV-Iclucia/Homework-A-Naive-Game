@@ -6,20 +6,18 @@ function Reset()
     gl.viewport(0,0,canvas.width,canvas.height);
 }
 let view=mat4.create();
-let proj=mat4.create();
+let proj=mat4.create(),lightProj=mat4.create();
 const lightView=mat4.create();
-const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(1.0,0.0,0.0);
-mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,200.0);
-let cameraPos=vec3.create(),cameraFront=vec3.create(),cameraUp=vec3.create();
+const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(0.6,0.0,0.0);
+mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
+mat4.perspective(lightProj,85*Math.PI/180.0,canvas.width/canvas.height,5.0,100.0);
+let cameraPos=vec3.fromValues(0.0,0.0,2.0),cameraFront=vec3.fromValues(0.0,0.0,-1.0),cameraUp=vec3.fromValues(0.0,1.0,0.0);
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let bossModel=mat4.create();
 let inAir=false;
 let stamina=-0.5;
-let BossPos=vec3.fromValues(0.0,0.0,0.0),BossDir=0;
+let BossPos=vec3.fromValues(15.0,0.0,0.0),BossDir=0;
 let phase=1;
-cameraPos=[0.0,0.0,2.0];
-cameraFront=[0.0,0.0,-1.0];
-cameraUp=[0.0,1.0,0.0];
 const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
 const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
 const FloorShader=initShader(gl,FloorVertexShader,FloorFragmentShader);
@@ -43,10 +41,7 @@ let CylinderQ=new Queue();
 let ConeQ=new Queue();
 function processInput(currentFrame)
 {
-    let dir=vec3.create(),vdir=vec3.create();
-	dir=[cameraFront[0],0,cameraFront[2]]; 
-	dir[1]=0.0;
-	vdir=[0.0,1.0,0.0];
+    let dir=vec3.fromValues(cameraFront[0],0.0,cameraFront[2]),vdir=vec3.fromValues(0.0,1.0,0.0);
     vec3.normalize(dir,dir);
 	vec3.cross(vdir,vdir,dir);
 	let spd = 2.5*deltaFrame;
@@ -57,19 +52,19 @@ function processInput(currentFrame)
 		if (S)vec3.scaleAndAdd(cameraPos,cameraPos,dir,-spd);
 		if (A)vec3.scaleAndAdd(cameraPos,cameraPos,vdir,spd);
 		if (D)vec3.scaleAndAdd(cameraPos,cameraPos,vdir,-spd);
-		if(cameraPos[0]< -35.5)cameraPos[0]=-35.5;
-		if(cameraPos[0]>35.5)cameraPos[0]=35.5;
-		if(cameraPos[2]< -35.5)cameraPos[2]=-35.5;
-		if(cameraPos[2]>35.5)cameraPos[2]=35.5;
+		if(cameraPos[0]< -BOUND)cameraPos[0]=-BOUND;
+		if(cameraPos[0]>BOUND)cameraPos[0]=BOUND;
+		if(cameraPos[2]< -BOUND)cameraPos[2]=-BOUND;
+		if(cameraPos[2]>BOUND)cameraPos[2]=BOUND;
 	}
 	else
 	{
 		spd = 10.0*deltaFrame;
         vec3.scaleAndAdd(cameraPos,cameraPos,dashDir,spd);
-		if(cameraPos[0]< -35.5)cameraPos[0]=-35.5;
-		if(cameraPos[0]>35.5)cameraPos[0]=35.5;
-		if(cameraPos[2]< -35.5)cameraPos[2]=-35.5;
-		if(cameraPos[2]>35.5)cameraPos[2]=35.5;
+		if(cameraPos[0]< -BOUND)cameraPos[0]=-BOUND;
+		if(cameraPos[0]>BOUND)cameraPos[0]=BOUND;
+		if(cameraPos[2]< -BOUND)cameraPos[2]=-BOUND;
+		if(cameraPos[2]>BOUND)cameraPos[2]=BOUND;
 	}
 	if (SPACE)
 	{
@@ -91,10 +86,10 @@ function processInput(currentFrame)
 			if (D)vec3.subtract(dashDir,dashDir,vdir);
 			if (vec3.equals(dashDir,[0.0,0.0,0.0]))dashDir=dir;
 			else vec3.normalize(dashDir,dashDir);
-			if(cameraPos[0]< -35.5)cameraPos[0]=-35.5;
-			if(cameraPos[0]>35.5)cameraPos[0]=35.5;
-			if(cameraPos[2]< -35.5)cameraPos[2]=-35.5;
-			if(cameraPos[2]>35.5)cameraPos[2]=35.5;
+			if(cameraPos[0]< -BOUND)cameraPos[0]=-BOUND;
+			if(cameraPos[0]>BOUND)cameraPos[0]=BOUND;
+			if(cameraPos[2]< -BOUND)cameraPos[2]=-BOUND;
+			if(cameraPos[2]>BOUND)cameraPos[2]=BOUND;
 			// stamina -= 0.1;
 		}
 	}
@@ -214,9 +209,9 @@ function main()
 		gl.clearColor(0.0,0.0,0.0,1.0);
 		gl.clear(gl.COLOR_BUFFER5_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
-		const Var=[['mat4',lightView],['mat4',proj],['mat4',bossModel]];
+		const Var=[['mat4',lightView],['mat4',lightProj],['mat4',mat4.create()]];
 		renderObject(ShadowShader,Var,FloorVAO_S,6,ShadowFBO.texture);
-		Var[2]=[['mat4',mat4.create()]];
+		Var[2]=['mat4',bossModel];
 		renderObject(ShadowShader,Var,BossVAO_S,36,ShadowFBO.texture);
 		gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 		gl.viewport(0,0,canvas.width,canvas.height);
@@ -228,17 +223,9 @@ function main()
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
-		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['sampler',FloorTex],['sampler',TexCnt-1],
+		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['mat4',lightProj],['sampler',FloorTex],['sampler',TexCnt-1],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
-						//gl.bufferSubData();
-		//gl.bufferSubData();
-		const opt=Math.floor(Math.random()*500);
-		if(opt==1)genLaser(currentFrame);
-		if(opt==2)
-		{
-			const ang=Math.random()*2*Math.PI;
-			genThorn(currentFrame,Math.cos(ang),Math.sin(ang));
-		}
+		runBossAI(currentFrame);
 		renderCircle(currentFrame);
 		renderLaser(currentFrame);
 		renderThorn(currentFrame);

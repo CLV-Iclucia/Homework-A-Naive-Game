@@ -24,7 +24,8 @@ varying highp vec3 aNorm;
 void main()
 {
     gl_Position=proj*view*model*vec4(vPos.xyz,1.0);
-    aNorm=vNorm;
+    aNorm=mat3(model)*vNorm;
+	aNorm=normalize(aNorm);
     verPos=gl_Position;
 }
 `

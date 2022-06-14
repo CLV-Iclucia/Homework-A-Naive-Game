@@ -13,8 +13,9 @@ void main()
 
 const SwordFragmentShader=
 `varying highp vec4 aColor;
+const highp float gamma=2.2;
 void main()
 {
-    gl_FragColor=aColor;
+    gl_FragColor=vec4(pow(aColor.xyz,vec3(1.0/gamma)),1.0);
 }
 `;

@@ -4,6 +4,7 @@ attribute vec2 vTexCoord;
 uniform mat4 view;
 uniform mat4 lightView;
 uniform mat4 proj;
+uniform mat4 lightProj;
 varying highp vec4 verPos;
 varying highp vec4 lightSpacePos;
 varying highp vec3 aNorm;
@@ -11,7 +12,7 @@ varying highp vec2 aTexCoord;
 void main()
 {
 	verPos=vec4(vPos.x,vPos.y,vPos.z,1.0);//verPos是世界空间坐标,proj*lightView*verPos会得到光源视角的透视空间坐标
-	lightSpacePos=proj*lightView*verPos;
+	lightSpacePos=lightProj*lightView*verPos;
 	gl_Position =proj*view*verPos;
 	aNorm=vec3(0.0,1.0,0.0);
 	aTexCoord=vTexCoord;
@@ -28,15 +29,15 @@ uniform highp vec3 viewPos;
 uniform	highp vec3 lightPos;
 uniform highp vec3 lightColor;
 uniform highp vec2 pixelSize;
-const highp float lightSrcWidth=0.8;
-const highp float eps=0.0035;
+const highp float lightSrcWidth=0.5;
+const highp float eps=0.004;
 highp float Z;//这是当前片段线性化并且归一化以后的深度
 highp vec3 lightSpaceCoord;
 highp vec4 opt=vec4(1.0,1.0,1.0,1.0);
 highp float linearize(highp float depth)
 {
 	highp float z = depth * 2.0 - 1.0;
-    return 0.4 / (200.1 - z * 199.9);//压缩至原来线性化深度的1/25
+    return 10.0 / (105.0 - z * 95.0);
 }
 highp float renderShadow(highp vec2 offset)
 {
@@ -55,43 +56,59 @@ void main()
 	lightSpaceCoord=lightSpacePos.xyz/lightSpacePos.w;
 	highp float shadow=0.0;
 	lightSpaceCoord=0.5*lightSpaceCoord+0.5;
-	Z=linearize(lightSpaceCoord.z);
-	highp float aveDepth=0.0;
-	int cnt=0;
-	for(int i=-2;i<=2;i++)
-		for(int j=-2;j<=2;j++)
-		{
-			highp float tmpDepth=getLightSpaceDepth(lightSpaceCoord.xy+vec2(float(i),float(j))*pixelSize);
-			if(tmpDepth+eps<Z)//如果挡住了，计入遮挡体深度
-			{
-				aveDepth+=tmpDepth;
-				cnt++;
-			}
-		}
-	if(cnt>0)
+	if(lightSpaceCoord.x<0.0||lightSpaceCoord.y>1.0||lightSpaceCoord.y<0.0||lightSpaceCoord.y>1.0)shadow=1.0;
+	else
 	{
-		aveDepth/=float(cnt);//得到了平均遮挡体平面
-		highp float fuck=(Z-aveDepth)*lightSrcWidth/(aveDepth+0.02)*0.03/(Z+0.02)/pixelSize.y;
-		opt=vec4(1.0,1.0,1.0,1.0);
-		int Penumbra=int(fuck);//得到了半影宽度
-		if(Penumbra==0)shadow=renderShadow(vec2(0.0,0.0));
-		else
-		{
-			//discard;
-			for(int i=0;i<=2;i++)
+		Z=linearize(lightSpaceCoord.z);
+		highp float aveDepth=0.0;
+		int cnt=0;
+		for(int i=-1;i<=1;i++)
+			for(int j=-1;j<=1;j++)
 			{
-				for(int j=0;j<=2;j++)
+				highp float tmpDepth=getLightSpaceDepth(lightSpaceCoord.xy+vec2(float(i),float(j))*0.2*pixelSize);
+				if(tmpDepth+eps<Z)//如果挡住了，计入遮挡体深度
 				{
-					shadow+=renderShadow(vec2(float(i)*pixelSize.x,float(j)*pixelSize.y));
-					shadow+=renderShadow(vec2(float(-i)*pixelSize.x,float(j)*pixelSize.y));
-					shadow+=renderShadow(vec2(float(i)*pixelSize.x,float(-j)*pixelSize.y));
-					shadow+=renderShadow(vec2(float(-i)*pixelSize.x,float(-j)*pixelSize.y));
+					aveDepth+=tmpDepth;
+					cnt++;
 				}
 			}
-			shadow/=float((Penumbra*2+1)*(Penumbra*2+1));
+		if(cnt>0)
+		{
+			aveDepth/=float(cnt);//得到了平均遮挡体平面
+			highp float penum=2.0*(Z-aveDepth)*lightSrcWidth/(aveDepth+0.05)/pixelSize.y;
+			int Penumbra=int(penum);//得到了半影宽度
+			if(Penumbra==0)shadow=renderShadow(vec2(0.0,0.0));
+			else if(Penumbra==1)//真的要命，shader要求循环上限是固定的
+			{
+				for(int i=0;i<=1;i++)
+				{
+					for(int j=0;j<=1;j++)
+					{
+						shadow+=renderShadow(vec2(0.5*float(i)*pixelSize.x,0.5*float(j)*pixelSize.y));
+						shadow+=renderShadow(vec2(0.5*float(-i)*pixelSize.x,0.5*float(j)*pixelSize.y));
+						shadow+=renderShadow(vec2(0.5*float(i)*pixelSize.x,0.5*float(-j)*pixelSize.y));
+						shadow+=renderShadow(vec2(0.5*float(-i)*pixelSize.x,0.5*float(-j)*pixelSize.y));
+					}
+				}
+				shadow/=9.0;
+			}
+			else
+			{
+				for(int i=0;i<=2;i++)
+				{
+					for(int j=0;j<=2;j++)
+					{
+						shadow+=renderShadow(vec2(0.5*float(i)*pixelSize.x,0.5*float(j)*pixelSize.y));
+						shadow+=renderShadow(vec2(0.5*float(-i)*pixelSize.x,0.5*float(j)*pixelSize.y));
+						shadow+=renderShadow(vec2(0.5*float(i)*pixelSize.x,0.5*float(-j)*pixelSize.y));
+						shadow+=renderShadow(vec2(0.5*float(-i)*pixelSize.x,0.5*float(-j)*pixelSize.y));
+					}
+				}
+				shadow/=25.0;
+			}
 		}
+		else shadow=1.0;
 	}
-	else shadow=1.0;
 	highp vec3 ambientColor=texture2D(myTex,aTexCoord).xyz;
 	if(ambientColor.x<0.5)ambientColor.x*=0.2;
 	ambientColor.y*=0.2;
