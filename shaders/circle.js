@@ -17,6 +17,6 @@ uniform sampler2D myTex;
 void main()
 {
     highp vec4 color=texture2D(myTex,aTexCoord);
-    if(color.w<0.25)discard;
+    if(color.w<0.75)discard;
     gl_FragColor=color;
 }`

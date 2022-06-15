@@ -1,4 +1,4 @@
-const BOUND=27.5;
+const BOUND=25.0;
 const HPver=
 [
 	-0.9,0.8,-1.0,

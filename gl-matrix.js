@@ -44,25 +44,6 @@ function clone$5(a) {
   out[15] = a[15];
   return out;
 }
-function copy$5(out, a) {
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  out[4] = a[4];
-  out[5] = a[5];
-  out[6] = a[6];
-  out[7] = a[7];
-  out[8] = a[8];
-  out[9] = a[9];
-  out[10] = a[10];
-  out[11] = a[11];
-  out[12] = a[12];
-  out[13] = a[13];
-  out[14] = a[14];
-  out[15] = a[15];
-  return out;
-}
 function set$5(out, m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
   out[0] = m00;
   out[1] = m01;
@@ -328,7 +309,6 @@ var mat4 = /*#__PURE__*/Object.freeze({
   __proto__: null,
   create: create$5,
   clone: clone$5,
-  copy: copy$5,
   set: set$5,
   identity: identity$2,
   translate: translate$1,
@@ -358,12 +338,6 @@ function fromValues$4(x, y, z) {
   out[0] = x;
   out[1] = y;
   out[2] = z;
-  return out;
-}
-function copy$4(out, a) {
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
   return out;
 }
 function set$4(out, x, y, z) {
@@ -402,12 +376,6 @@ function distance$2(a, b) {
   var z = b[2] - a[2];
   return Math.hypot(x, y, z);
 }
-function negate$2(out, a) {
-  out[0] = -a[0];
-  out[1] = -a[1];
-  out[2] = -a[2];
-  return out;
-}
 function normalize$4(out, a) {
   var x = a[0];
   var y = a[1];
@@ -419,12 +387,6 @@ function normalize$4(out, a) {
   out[0] = a[0] * len;
   out[1] = a[1] * len;
   out[2] = a[2] * len;
-  return out;
-}
-function zero$2(out) {
-  out[0] = 0.0;
-  out[1] = 0.0;
-  out[2] = 0.0;
   return out;
 }
 function cross$2(out,a,b)
@@ -444,187 +406,20 @@ function length$1(a)
 {
   return Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
 }
-var sub$2 = subtract$2;
 var vec3 = Object.freeze({
   __proto__: null,
   create: create$4,
   clone: clone$4,
   fromValues: fromValues$4,
-  copy: copy$4,
   set: set$4,
   add: add$4,
   subtract: subtract$2,
   scale: scale$4,
   scaleAndAdd: scaleAndAdd$2,
-  negate: negate$2,
   normalize: normalize$4,
   cross: cross$2,
-  zero: zero$2,
   equals:equals,
-  sub: sub$2,
   length:length$1,
-});
-function create$3() {
-  var out = new ARRAY_TYPE(4);
-  if (ARRAY_TYPE != Float32Array) {
-    out[0] = 0;
-    out[1] = 0;
-    out[2] = 0;
-    out[3] = 0;
-  }
-  return out;
-}
-function clone$3(a) {
-  var out = new ARRAY_TYPE(4);
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  return out;
-}
-function fromValues$3(x, y, z, w) {
-  var out = new ARRAY_TYPE(4);
-  out[0] = x;
-  out[1] = y;
-  out[2] = z;
-  out[3] = w;
-  return out;
-}
-function copy$3(out, a) {
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  return out;
-}
-function set$3(out, x, y, z, w) {
-  out[0] = x;
-  out[1] = y;
-  out[2] = z;
-  out[3] = w;
-  return out;
-}
-function add$3(out, a, b) {
-  out[0] = a[0] + b[0];
-  out[1] = a[1] + b[1];
-  out[2] = a[2] + b[2];
-  out[3] = a[3] + b[3];
-  return out;
-}
-function subtract$1(out, a, b) {
-  out[0] = a[0] - b[0];
-  out[1] = a[1] - b[1];
-  out[2] = a[2] - b[2];
-  out[3] = a[3] - b[3];
-  return out;
-}
-function multiply$3(out, a, b) {
-  out[0] = a[0] * b[0];
-  out[1] = a[1] * b[1];
-  out[2] = a[2] * b[2];
-  out[3] = a[3] * b[3];
-  return out;
-}
-function min$1(out, a, b) {
-  out[0] = Math.min(a[0], b[0]);
-  out[1] = Math.min(a[1], b[1]);
-  out[2] = Math.min(a[2], b[2]);
-  out[3] = Math.min(a[3], b[3]);
-  return out;
-}
-function max$1(out, a, b) {
-  out[0] = Math.max(a[0], b[0]);
-  out[1] = Math.max(a[1], b[1]);
-  out[2] = Math.max(a[2], b[2]);
-  out[3] = Math.max(a[3], b[3]);
-  return out;
-}
-function scale$3(out, a, b) {
-  out[0] = a[0] * b;
-  out[1] = a[1] * b;
-  out[2] = a[2] * b;
-  out[3] = a[3] * b;
-  return out;
-}
-function scaleAndAdd$1(out, a, b, scale) {
-  out[0] = a[0] + b[0] * scale;
-  out[1] = a[1] + b[1] * scale;
-  out[2] = a[2] + b[2] * scale;
-  out[3] = a[3] + b[3] * scale;
-  return out;
-}
-function negate$1(out, a) {
-  out[0] = -a[0];
-  out[1] = -a[1];
-  out[2] = -a[2];
-  out[3] = -a[3];
-  return out;
-}
-function normalize$3(out, a) {
-  var x = a[0];
-  var y = a[1];
-  var z = a[2];
-  var w = a[3];
-  var len = x * x + y * y + z * z + w * w;
-  if (len > 0) {
-    len = 1 / Math.sqrt(len);
-  }
-  out[0] = x * len;
-  out[1] = y * len;
-  out[2] = z * len;
-  out[3] = w * len;
-  return out;
-}
-function dot$3(a, b) {
-  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
-}
-function cross$1(out, u, v, w) {
-  var A = v[0] * w[1] - v[1] * w[0],
-      B = v[0] * w[2] - v[2] * w[0],
-      C = v[0] * w[3] - v[3] * w[0],
-      D = v[1] * w[2] - v[2] * w[1],
-      E = v[1] * w[3] - v[3] * w[1],
-      F = v[2] * w[3] - v[3] * w[2];
-  var G = u[0];
-  var H = u[1];
-  var I = u[2];
-  var J = u[3];
-  out[0] = H * F - I * E + J * D;
-  out[1] = -(G * F) + I * C - J * B;
-  out[2] = G * E - H * C + J * A;
-  out[3] = -(G * D) + H * B - I * A;
-  return out;
-}
-function zero$1(out) {
-  out[0] = 0.0;
-  out[1] = 0.0;
-  out[2] = 0.0;
-  out[3] = 0.0;
-  return out;
-}
-var sub$1 = subtract$1;
-var mul$3 = multiply$3;
-var vec4 = /*#__PURE__*/Object.freeze({
-  __proto__: null,
-  create: create$3,
-  clone: clone$3,
-  fromValues: fromValues$3,
-  copy: copy$3,
-  set: set$3,
-  add: add$3,
-  subtract: subtract$1,
-  multiply: multiply$3,
-  min: min$1,
-  max: max$1,
-  scale: scale$3,
-  scaleAndAdd: scaleAndAdd$1,
-  negate: negate$1,
-  normalize: normalize$3,
-  dot: dot$3,
-  cross: cross$1,
-  zero: zero$1,
-  sub: sub$1,
-  mul: mul$3,
 });
 function create$6()
 {

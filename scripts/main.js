@@ -10,13 +10,13 @@ let proj=mat4.create(),lightProj=mat4.create();
 const lightView=mat4.create();
 const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(0.6,0.0,0.0);
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
-mat4.perspective(lightProj,85*Math.PI/180.0,canvas.width/canvas.height,5.0,100.0);
+mat4.perspective(lightProj,45*Math.PI/180.0,canvas.width/canvas.height,5.0,100.0);
 let cameraPos=vec3.fromValues(0.0,0.0,2.0),cameraFront=vec3.fromValues(0.0,0.0,-1.0),cameraUp=vec3.fromValues(0.0,1.0,0.0);
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let bossModel=mat4.create();
 let inAir=false;
 let stamina=-0.5;
-let BossPos=vec3.fromValues(15.0,0.0,0.0),BossDir=0;
+let BossPos=vec3.fromValues(0.0,0.0,0.0),BossDir=0;
 let phase=1;
 const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
 const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
@@ -27,11 +27,12 @@ const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
 const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx,6);
 const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx,8);
 const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx,5);
-const BossHeadTex=initTex(gl,"head");
-const FloorTex=initTex(gl,"floor");
+const BossHeadTex=initTex(gl,"head",true);
+const FloorTex=initTex(gl,"floor",true);
+const NormalMap=initTex(gl,"norm",false);
 const CircleShader=initShader(gl,CircleVertexShader,CircleFragmentShader);
 const CircleVAO=initModel(gl,CircleShader,TexSq,BarIdx,5);
-const CircleTex=initTex(gl,"ring");
+const CircleTex=initTex(gl,"ring",true);
 const LaserShader=initShader(gl,LaserVertexShader,LaserFragmentShader);
 const LaserVAO=initModel(gl,LaserShader,Cylinder,CylinderIdx,3);
 const ThornShader=initShader(gl,ThornVertexShader,ThornFragmentShader);
@@ -199,7 +200,7 @@ function main()
         processInput(currentFrame);
 		BossDir+=Math.random()*0.02;
 		let BossFront=vec3.fromValues(Math.cos(BossDir),0.0,Math.sin(BossDir));
-		mat4.lookAt(lightView,lightPos,BossPos,vec3.clone([0.0,1.0,0.0]));
+		mat4.lookAt(lightView,vec3.scaleAndAdd(tmp,BossPos,lightPos,0.5),BossPos,vec3.clone([0.0,1.0,0.0]));
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
 		const bossModel=mat4.create();
 		mat4.translate(bossModel,bossModel,BossPos);
@@ -223,7 +224,7 @@ function main()
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
-		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['mat4',lightProj],['sampler',FloorTex],['sampler',TexCnt-1],
+		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['mat4',lightProj],['sampler',FloorTex],['sampler',TexCnt-1],['sampler',NormalMap],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
 		runBossAI(currentFrame);
 		renderCircle(currentFrame);

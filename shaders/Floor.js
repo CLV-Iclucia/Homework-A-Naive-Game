@@ -7,23 +7,21 @@ uniform mat4 proj;
 uniform mat4 lightProj;
 varying highp vec4 verPos;
 varying highp vec4 lightSpacePos;
-varying highp vec3 aNorm;
 varying highp vec2 aTexCoord;
 void main()
 {
 	verPos=vec4(vPos.x,vPos.y,vPos.z,1.0);//verPos是世界空间坐标,proj*lightView*verPos会得到光源视角的透视空间坐标
 	lightSpacePos=lightProj*lightView*verPos;
 	gl_Position =proj*view*verPos;
-	aNorm=vec3(0.0,1.0,0.0);
 	aTexCoord=vTexCoord;
 }`
 const FloorFragmentShader=
 `varying highp vec4 verPos;
 varying highp vec4 lightSpacePos;
-varying highp vec3 aNorm;
 varying highp vec2 aTexCoord;
 uniform sampler2D myTex;
 uniform sampler2D ShadowMap;
+uniform sampler2D NormalMap;
 uniform highp vec3 viewDir;
 uniform highp vec3 viewPos;
 uniform	highp vec3 lightPos;
@@ -45,7 +43,6 @@ highp float renderShadow(highp vec2 offset)
 	highp float lightSpaceDepth=texture2D(ShadowMap,tmpCoord.xy).x;
 	return lightSpaceDepth+eps<Z?0.0:1.0;
 }
-highp vec2 OSR[2];//Occlusion Searching Region
 highp float getLightSpaceDepth(highp vec2 pos)
 {
 	return texture2D(ShadowMap,pos).x;
@@ -109,7 +106,9 @@ void main()
 		}
 		else shadow=1.0;
 	}
-	highp vec3 ambientColor=texture2D(myTex,aTexCoord).xyz;
+	highp vec3 ambientColor=texture2D(myTex,aTexCoord*2.0).rgb;
+	//highp vec3 aNorm=vec3(0.0,1.0,0.0);
+	highp vec3 aNorm=normalize(texture2D(NormalMap,aTexCoord*32.0).gbr);
 	if(ambientColor.x<0.5)ambientColor.x*=0.2;
 	ambientColor.y*=0.2;
 	ambientColor.z*=0.2;
