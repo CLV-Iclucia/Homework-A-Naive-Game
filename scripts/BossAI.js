@@ -5,7 +5,7 @@ function genLaser(currentTime)
 {
     let dist=vec3.length(cameraPos-BossPos);
     let dir=vec3.create();
-    let cnt=Math.floor(Math.random()*phase*5)+5*phase;//根据阶段控制生成激光数量
+    let cnt=Math.floor(Math.random()*phase*10)+10*phase;//根据阶段控制生成激光数量
     let sum=currentTime;
     let pos;
     let minDistPlayer=Math.min(cameraPos[0]+BOUND,BOUND-cameraPos[0],cameraPos[2]+BOUND,BOUND-cameraPos[2]);
@@ -33,7 +33,8 @@ function genLaser(currentTime)
         CylinderQ.push({
             P:pos,
             trigTime:sum+0.4,
-            endTime:sum+1.7
+            endTime:sum+1.7,
+            CV:null,
         });//这是激光
         sum+=Math.random()*0.3;
     }
@@ -50,6 +51,7 @@ function genThorn(currentTime,dirx,dirz)//在(dirx,dirz)方向生成一条地刺
             P:pos,
             trigTime:sum,
             endTime:sum+4.0,
+            CV:null,
         });
         sum+=0.04;
         if(Math.abs(pos[0])>BOUND||Math.abs(pos[2])>BOUND)break;
@@ -58,6 +60,14 @@ function genThorn(currentTime,dirx,dirz)//在(dirx,dirz)方向生成一条地刺
 function runBossAI(currentTime)//有玩家位置和Boss位置
 {
     const opt=Math.floor(Math.random()*500);
-    if(opt==1)genLaser(currentTime);
-    if(opt==2)genThorn(currentTime,1,0);
+//    if(opt==1)genLaser(currentTime);
+    if(opt==2)
+    {
+        const theta=Math.PI*2.0*Math.random();
+        genThorn(currentTime,Math.cos(theta),Math.sin(theta));
+    }
+    if(opt==3)
+    {
+        genThorn(currentTime,1,0);
+    }
 }

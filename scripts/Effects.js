@@ -25,7 +25,7 @@ function renderCircle(currentTime)//渲染场景中所有圈
         else break;
     }
 }
-function renderLaser(currentTime)//渲染场景中激光
+function processLaser(currentTime)//渲染场景中激光
 {
     gl.useProgram(LaserShader.shader);
     gl.bindVertexArray(LaserVAO);
@@ -41,20 +41,28 @@ function renderLaser(currentTime)//渲染场景中激光
         mat4.translate(model,model,cmd.P);
         let rate=0.45;
         if(alpha<0.8)rate=0.05;
-        else if(alpha<=0.9)rate=4*alpha-3.15;
+        else
+        {
+            if(cmd.CV==null)cmd.CV=CVM.create(0.1,vec2.fromValues(cmd.P[0],cmd.P[2]),0.0,0.45,4.0,NO_DAMAGE);
+            if(alpha<=0.9)rate=4*alpha-3.15;
+        }
         mat4.scale(model,model,vec3.fromValues(rate,36.0,rate));
         gl.uniformMatrix4fv(LaserShader.UniLoc[0],false,model);
         gl.drawElements(gl.TRIANGLES,96,gl.UNSIGNED_SHORT,0);
     }
-    gl.bindVertexArray(null);
     while(!CylinderQ.empty())
     {
-        if(currentTime>CylinderQ.front().endTime)CylinderQ.pop();
+        if(currentTime>CylinderQ.front().endTime)
+        {
+            CVM.remove(CylinderQ.front().CV);
+            CylinderQ.front().CV=null;
+            CylinderQ.pop();
+        }
         else break;
     }
     gl.bindVertexArray(null);
 }
-function renderThorn(currentTime)//渲染场景中的地刺
+function processThorn(currentTime)//渲染场景中的地刺
 {
     gl.useProgram(ThornShader.shader);
     gl.bindVertexArray(ThornVAO);
@@ -72,14 +80,35 @@ function renderThorn(currentTime)//渲染场景中的地刺
         mat4.identity(model);
         const alpha=(currentTime-cmd.trigTime)/4.0;
         let trans=vec3.clone(cmd.P);
-        if(alpha<0.05)trans[1]=80*alpha-5.0;
-        else if(alpha<=0.95) trans[1]=-1.0;
-        else trans[1]=-80*alpha+75.0;
+        if(cmd.CV==null)cmd.CV=CVM.create(0.6,vec2.fromValues(cmd.P[0],cmd.P[2]),-4.0,1.0,3.0,SOLID);
+        if(alpha<0.05)
+        {
+            trans[1]=80*alpha-5.0;
+            CVM.updateY(cmd.CV,trans[1]);
+        }
+        else
+        {
+            CVM.updateOnHit(cmd.CV,BLOCKED);
+            cmd.CV.setDamage(0);
+            if(alpha<=0.95) 
+            {
+                CVM.updateY(cmd.CV,-1.0);
+                trans[1]=-1.0;
+            }
+            else
+            {
+                if(cmd.CV!=null)
+                {
+                    CVM.remove(cmd.CV);
+                    cmd.CV=null;
+                }
+                trans[1]=-80*alpha+75.0;
+            }
+        }
         mat4.translate(model,model,trans);
         gl.uniformMatrix4fv(ThornShader.UniLoc[0],false,model);
         gl.drawElements(gl.TRIANGLES,48,gl.UNSIGNED_SHORT,0);
     }
-    gl.bindVertexArray(null);
     while(!ConeQ.empty())
     {
         if(currentTime>ConeQ.front().endTime)ConeQ.pop();

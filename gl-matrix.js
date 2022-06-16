@@ -436,10 +436,36 @@ function fromValues$5(a,b)
 }
 function dist(a,b)
 {
-  return Math.sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1]));
+  return Math.hypot(a[0]-b[0],a[1]-b[1]);
+}
+function normalize$3(out,a)
+{
+  var x = a[0];
+  var y = a[1];
+  var len = x * x + y * y;
+  if (len > 0) {
+    len = 1 / Math.sqrt(len);
+  }
+  out[0] = a[0] * len;
+  out[1] = a[1] * len;
+  return out;
+}
+function add$3(out,a,b)
+{
+  out[0]=a[0]+b[0];
+  out[1]=a[1]+b[1];
+}
+function scaleAndAdd$1(out,a,b,alpha)
+{
+  out[0]=a[0]+b[0]*alpha;
+  out[1]=a[1]+b[1]*alpha;
+  return out;
 }
 var vec2=Object.freeze({
   create:create$6,
   fromValues:fromValues$5,
   dist:dist,
+  normalize:normalize$3,
+  add:add$3,
+  scaleAndAdd:scaleAndAdd$1,
 })

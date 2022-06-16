@@ -15,8 +15,10 @@ let cameraPos=vec3.fromValues(0.0,0.0,2.0),cameraFront=vec3.fromValues(0.0,0.0,-
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
 let bossModel=mat4.create();
 let inAir=false;
-let stamina=-0.5;
+let stamina=1.0,HP=1.0;
 let BossPos=vec3.fromValues(0.0,0.0,0.0),BossDir=0;
+let BarModelBase=mat4.create(),BarModel=mat4.create();
+mat4.translate(BarModelBase,BarModelBase,vec3.fromValues(-0.9,0.0,0.0));
 let phase=1;
 const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
 const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
@@ -37,7 +39,12 @@ const LaserShader=initShader(gl,LaserVertexShader,LaserFragmentShader);
 const LaserVAO=initModel(gl,LaserShader,Cylinder,CylinderIdx,3);
 const ThornShader=initShader(gl,ThornVertexShader,ThornFragmentShader);
 const ThornVAO=initModel(gl,ThornShader,Cone,ConeIdx,6);
-let CircleQ=new Queue();//这些队列都用于存放并管理当前特效
+const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
+const HPVAO=initModel(gl,BarShader,HPver,BarIdx,3);
+const SPVAO=initModel(gl,BarShader,SPver,BarIdx,3);
+const PlayerCV=new CollisionVolume(0,vec2.fromValues(cameraPos[0],cameraPos[2]),-1.0,0.5,1.0);
+const CVM=new CVManager();
+let CircleQ=new Queue();//这些队列都用于存放并管理特效
 let CylinderQ=new Queue();
 let ConeQ=new Queue();
 function processInput(currentFrame)
@@ -45,10 +52,9 @@ function processInput(currentFrame)
     let dir=vec3.fromValues(cameraFront[0],0.0,cameraFront[2]),vdir=vec3.fromValues(0.0,1.0,0.0);
     vec3.normalize(dir,dir);
 	vec3.cross(vdir,vdir,dir);
-	let spd = 2.5*deltaFrame;
+	let spd = 4.5*deltaFrame;
     if(currentFrame >= dashEndFrame)//冲刺阶段不能处理平面移动
 	{
-		spd = 2.5*deltaFrame;
 		if (W)vec3.scaleAndAdd(cameraPos,cameraPos,dir,spd);
 		if (S)vec3.scaleAndAdd(cameraPos,cameraPos,dir,-spd);
 		if (A)vec3.scaleAndAdd(cameraPos,cameraPos,vdir,spd);
@@ -69,15 +75,16 @@ function processInput(currentFrame)
 	}
 	if (SPACE)
 	{
-		if (!inAir)
+		if (stamina>=0.1 &&!inAir)
 		{
 			inAir = true;
-			velocity = 50.0;
+			velocity = 45.0;
+			stamina-=0.1;
 		}
 	}
 	if (LSHIFT)
 	{
-		if(stamina>=-0.8&&currentFrame>=dashEndFrame)
+		if(stamina>=0.1&&currentFrame>=dashEndFrame)
 		{
 			dashEndFrame = currentFrame + 0.3;
 			dashDir=[0.0,0.0,0.0];
@@ -91,16 +98,17 @@ function processInput(currentFrame)
 			if(cameraPos[0]>BOUND)cameraPos[0]=BOUND;
 			if(cameraPos[2]< -BOUND)cameraPos[2]=-BOUND;
 			if(cameraPos[2]>BOUND)cameraPos[2]=BOUND;
-			// stamina -= 0.1;
+			stamina -= 0.1;
 		}
 	}
 	if (MLB)
 	{
-		if (currentFrame > ATKEndFrame)//更新攻击结束帧
+		if (stamina>=0.1&&currentFrame > ATKEndFrame)//更新攻击结束帧
 		{
 			ATKEndFrame=currentFrame+0.3;
 			if(currentFrame<ATKEndFrame+0.2)ATKopt^=1;
 			else ATKopt=0;
+			stamina-=0.1;
 		}
 	}
 	if (inAir)
@@ -181,9 +189,6 @@ function main()
         alert("无法初始化WebGL，你的浏览器、操作系统或硬件等可能不支持WebGL。");
         return;
     }
-	//const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
-	//const HPVAO=initModel(gl,BarShader,HPver,BarIdx);
-	//const SPVAO=initModel(gl,BarShader,SPver,BarIdx);
     let lastFrame=0;
 	ATKEndFrame=0;
 	ATKopt=1;
@@ -192,12 +197,19 @@ function main()
 	const BossVAO_S=initModel(gl,ShadowShader,BossHeadVer,BossHeadIdx,8);
 	const FloorVAO_S=initModel(gl,ShadowShader,FloorVer,BarIdx,5);
 	const ShadowFBO=initFrameBuffer(gl);
-    function render(currentFrame)
+    function gameLoop(currentFrame)
     {
         currentFrame*=0.001;
         deltaFrame=currentFrame-lastFrame;
         lastFrame=currentFrame;
+		stamina+=deltaFrame*0.1;
+		if(stamina>=1.0)stamina=1.0;
         processInput(currentFrame);
+		PlayerCV.setPos(vec2.fromValues(cameraPos[0],cameraPos[2]));
+		PlayerCV.setY(cameraPos[1]);
+		CVM.DetectCollision(PlayerCV);
+		cameraPos=vec3.fromValues(PlayerCV.getPos()[0],PlayerCV.getY(),PlayerCV.getPos()[1]);
+		if(HP<0.0)HP=0.0;
 		BossDir+=Math.random()*0.02;
 		let BossFront=vec3.fromValues(Math.cos(BossDir),0.0,Math.sin(BossDir));
 		mat4.lookAt(lightView,vec3.scaleAndAdd(tmp,BossPos,lightPos,0.5),BossPos,vec3.clone([0.0,1.0,0.0]));
@@ -226,16 +238,22 @@ function main()
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
 		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['mat4',lightProj],['sampler',FloorTex],['sampler',TexCnt-1],['sampler',NormalMap],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
+		mat4.scale(BarModel,BarModelBase,vec3.fromValues(stamina,1.0,1.0));
+		const BarVar=[['mat4',BarModel],['vec3',vec3.fromValues(0.0,0.8,0.4)]];
+		renderObject(BarShader,BarVar,SPVAO,6);
+		BarVar[1][1]=vec3.fromValues(1.0,1.0,1.0);
+		mat4.scale(BarModel,BarModelBase,vec3.fromValues(HP,1.0,1.0))
+		renderObject(BarShader,BarVar,HPVAO,6);
 		runBossAI(currentFrame);
 		renderCircle(currentFrame);
-		renderLaser(currentFrame);
-		renderThorn(currentFrame);
+		processLaser(currentFrame);
+		processThorn(currentFrame);
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
 		renderObject(BossShader,BossVar,BossVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
 		vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.05);
-        requestAnimationFrame(render);
+        requestAnimationFrame(gameLoop);
     }
-    requestAnimationFrame(render);
+    requestAnimationFrame(gameLoop);
 }

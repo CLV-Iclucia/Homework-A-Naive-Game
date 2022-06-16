@@ -5,10 +5,9 @@ void main()
 {
 	gl_Position=model*vec4(vPos,1.0);
 }`
-
 const BarFragmentShader=
-`uniform vec4 myColor;
+`uniform highp vec3 myColor;
 void main()
 {
-	gl_FragColor=myColor;
+	gl_FragColor=vec4(myColor,1.0);
 }`
