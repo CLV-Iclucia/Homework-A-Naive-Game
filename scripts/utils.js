@@ -35,7 +35,6 @@ class Queue//手动模拟了一个简易的队列类，将用于储存所有特�
 //碰撞对象多就意味着我最好写个加速结构
 //每种技能都只造成一段伤害
 //将玩家（虽然我偷懒没有做模型，但是得做碰撞检测）处理为圆柱体，给一个合理的半径为0.25
-//将玩家攻击范围划定为一个弧面，这可以通过运算来解决，不需要做一个单独的碰撞箱
 const DEFAULT=0,DISAPPEAR=1,NO_DAMAGE=2,BLOCKED=4,ASCENDING=8,POINTED=16;//作为type表示碰撞箱的属性
 class CollisionVolume//碰撞体类，这个就是用来结算伤害的
 {
@@ -192,7 +191,7 @@ class CVManager//将空间分块，管理碰撞箱
         if(opt)CV.type|=type;
         else CV.type^=type;
     }
-    DetectCollision(currentFrame,CV,isplayer=true)//对CV与周围的环境进行碰撞检测，同时进行结算
+    DetectCollision(currentFrame,CV,isplayer=1)//对CV与周围的环境进行碰撞检测，同时进行结算，isplayer=1表示对玩家进行检测，isplayer=2表示检测玩家武器伤害
     {
         const IDX=this.getIDX(CV.pos,CV.r);
         for(let i=0;i<IDX.length;i++)
@@ -202,14 +201,13 @@ class CVManager//将空间分块，管理碰撞箱
                 let V=nd.CV;
                 if(CV.Collide(V))
                 {
-                    if(isplayer)//先做伤害结算
+                    if(isplayer==1)//先做伤害结算
                     {
                         if(unhurtTime<currentFrame)
                         {
                             if(!(V.type&POINTED)||((V.type&POINTED)&&CV.y>=V.y+V.h-0.1))
                             {
                                 HP-=V.damage;
-                                console.log(CV.y,V.y,V.h,V.damage,V.type&NO_DAMAGE);
                                 unhurtTime=currentFrame+0.0006;
                             }
                         }

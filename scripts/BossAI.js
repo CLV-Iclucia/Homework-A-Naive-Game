@@ -60,7 +60,7 @@ function genThorn(currentTime,dirx,dirz)//在(dirx,dirz)方向生成一条地刺
 function runBossAI(currentTime)//有玩家位置和Boss位置
 {
     const opt=Math.floor(Math.random()*500);
-    if(opt==1||opt==4)genLaser(currentTime);
+    //if(opt==1||opt==4)genLaser(currentTime);
     if(opt==2)
     {
         const theta=Math.PI*2.0*Math.random();

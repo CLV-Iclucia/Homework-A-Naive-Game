@@ -11,14 +11,16 @@ const lightView=mat4.create();
 const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(0.6,0.0,0.0);
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
 mat4.perspective(lightProj,45*Math.PI/180.0,canvas.width/canvas.height,5.0,100.0);
-let cameraPos=vec3.fromValues(0.0,0.0,2.0),cameraFront=vec3.fromValues(0.0,0.0,-1.0),cameraUp=vec3.fromValues(0.0,1.0,0.0);
+let cameraPos=vec3.fromValues(-25.0,0.0,25.0),cameraFront=vec3.fromValues(0.0,0.0,-1.0),cameraUp=vec3.fromValues(0.0,1.0,0.0);
 let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt,unhurtTime=0.0;
+let BossunhurtTime=0.0;
 let bossModel=mat4.create();
 let inAir=false;
 let stamina=1.0,HP=1.0;
 let BossPos=vec3.fromValues(0.0,0.0,0.0),BossDir=0;
-let BarModelBase=mat4.create(),BarModel=mat4.create();
+const BarModelBase=mat4.create(),BarModel=mat4.create(),BossBarModelBase=mat4.create();
 mat4.translate(BarModelBase,BarModelBase,vec3.fromValues(-0.9,0.0,0.0));
+mat4.translate(BossBarModelBase,BossBarModelBase,vec3.fromValues(-0.5,-1.5,0.0));
 let phase=1;
 const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
 const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
@@ -44,12 +46,15 @@ const HPVAO=initModel(gl,BarShader,HPver,BarIdx,3);
 const SPVAO=initModel(gl,BarShader,SPver,BarIdx,3);
 const PlayerCV=new CollisionVolume(0,vec2.fromValues(cameraPos[0],cameraPos[2]),-1.0,0.5,1.0);
 const CVM=new CVManager();
-let CircleQ=new Queue();//这些队列都用于存放并管理特效
-let CylinderQ=new Queue();
-let ConeQ=new Queue();
+const CircleQ=new Queue();//这些队列都用于存放并管理特效
+const CylinderQ=new Queue();
+const ConeQ=new Queue();
+let BossHP=2.0;
+const SwdTipCV=CVM.create(0.0,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0,0.0,0.0);
+const SwdBladeCV=CVM.create(0.0,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0,0.0,0.0);
 function processInput(currentFrame)
 {
-    let dir=vec3.fromValues(cameraFront[0],0.0,cameraFront[2]),vdir=vec3.fromValues(0.0,1.0,0.0);
+    const dir=vec3.fromValues(cameraFront[0],0.0,cameraFront[2]),vdir=vec3.fromValues(0.0,1.0,0.0);
     vec3.normalize(dir,dir);
 	vec3.cross(vdir,vdir,dir);
 	let spd = 4.5*deltaFrame;
@@ -150,9 +155,10 @@ function Rotate(M,p,theta,A)//使得物体绕着自身坐标系中的p点A轴旋
 	M = mat4.translate(M,M,p);
 	return M;
 }
-function initSwdModel(currentFrame)
+function MoveSwd(currentFrame)//移动剑，顺便移动剑尖和剑身上的碰撞箱
 {
 	let model=mat4.create();
+	let isAttacking=false;
 	if (currentFrame <= ATKEndFrame)//攻击状态
 	{
 		if(currentFrame>=ATKEndFrame-0.3)
@@ -163,22 +169,43 @@ function initSwdModel(currentFrame)
 				model = mat4.translate(model,model, vec3.clone([-0.1, -0.2, -0.2]));
 				model = mat4.rotate(model,model, -45.0*Math.PI/180, vec3.clone([0.0,0.0,1.0]));
 				model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*(0.3-theta), vec3.clone([-1.0,0.0,0.0]));
+				isAttacking=true;
 			}
 			else
 			{
 				model = mat4.translate(model,model, vec3.clone([0.1, 0.0, -0.2]));
 				model = mat4.rotate(model,model, 110.0*Math.PI/180, vec3.clone([0.0, 0.0, 1.0]));
 				model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*( 0.3 - theta), vec3.clone([-1.0,0.0,0.0]));
+				isAttacking=true;
 			}
 		}
-		else mat4.set(model,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+		else
+		{
+			mat4.set(model,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+			CVM.update(SwdBladeCV,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0);
+			CVM.update(SwdTipCV,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0);
+		}
 	}
 	else 
 	{
 		model = mat4.translate(model,model, vec3.clone([0.3, -0.2, -0.5]));//结束了第二刀，处于未攻击状态
+		CVM.update(SwdBladeCV,vec2.fromValues(cameraPos[0],cameraPos[2]),0.0);
+		CVM.update(SwdTipCV,vec2.fromValues(cameraPos[0],cameraPos[2]),0.0);
 		ATKopt=1;
 	}
 	mat4.scale(model,model,vec3.clone([0.05,0.05,0.05]));
+	if(isAttacking)
+	{
+		const viewInvMatrix=mat4.viewInv(cameraPos,cameraFront);
+		const transform=mat4.create();
+		mat4.multiply(transform,viewInvMatrix,model);
+		const TipV=vec4.fromValues(0.0,6.4,0.0,1.0);
+		const BladeV=vec4.fromValues(0.0,3.2,0.0,1.0);
+		mat4.mulV(TipV,transform,TipV);
+		mat4.mulV(BladeV,transform,BladeV);
+		CVM.update(SwdTipCV,vec2.fromValues(TipV[0],TipV[2]),TipV[1]);
+		CVM.update(SwdBladeCV,vec2.fromValues(BladeV[0],BladeV[1]),BladeV[1]);
+	}
 	return model;
 }
 function main()
@@ -197,6 +224,7 @@ function main()
 	const BossVAO_S=initModel(gl,ShadowShader,BossHeadVer,BossHeadIdx,8);
 	const FloorVAO_S=initModel(gl,ShadowShader,FloorVer,BarIdx,5);
 	const ShadowFBO=initFrameBuffer(gl);
+	let BossCV=CVM.create(0.0,vec2.fromValues(BossPos[0],BossPos[2]),BossPos[1],0.35,1.0,BLOCKED);
     function gameLoop(currentFrame)
     {
         currentFrame*=0.001;
@@ -210,6 +238,15 @@ function main()
 		CVM.DetectCollision(currentFrame,PlayerCV);
 		cameraPos=vec3.fromValues(PlayerCV.pos[0],PlayerCV.y,PlayerCV.pos[1]);
 		if(HP<0.0)HP=0.0;
+		if(currentFrame>BossunhurtTime)
+		{
+			if(SwdTipCV.Collide(BossCV)||SwdBladeCV.Collide(BossCV))
+			{
+				BossHP-=0.05;
+				BossunhurtTime=currentFrame+0.1;
+			}
+		}
+		cameraPos=vec3.fromValues(PlayerCV.pos[0],PlayerCV.y,PlayerCV.pos[1]);
 		BossDir+=Math.random()*0.02;
 		let BossFront=vec3.fromValues(Math.cos(BossDir),0.0,Math.sin(BossDir));
 		mat4.lookAt(lightView,vec3.scaleAndAdd(tmp,BossPos,lightPos,0.5),BossPos,vec3.clone([0.0,1.0,0.0]));
@@ -232,7 +269,7 @@ function main()
         gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
-		const swordModel=initSwdModel(currentFrame);
+		const swordModel=MoveSwd(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
 		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
@@ -244,6 +281,9 @@ function main()
 		BarVar[1][1]=vec3.fromValues(1.0,1.0,1.0);
 		mat4.scale(BarModel,BarModelBase,vec3.fromValues(HP,1.0,1.0))
 		renderObject(BarShader,BarVar,HPVAO,6);
+		mat4.scale(BarModel,BossBarModelBase,vec3.fromValues(BossHP,1.0,1.0));
+		BarVar[1][1]=vec3.fromValues(1.0,0.0,0.0);
+		renderObject(BarShader,BarVar,HPVAO,6);
 		runBossAI(currentFrame);
 		renderCircle(currentFrame);
 		processLaser(currentFrame);
@@ -252,8 +292,9 @@ function main()
 		renderObject(BossShader,BossVar,BossVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
-	//	vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.05);
-        requestAnimationFrame(gameLoop);
+		vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.05);
+        CVM.update(BossCV,vec2.fromValues(BossPos[0],BossPos[2]),BossPos[1]);
+		requestAnimationFrame(gameLoop);
     }
     requestAnimationFrame(gameLoop);
 }

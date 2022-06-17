@@ -24,26 +24,6 @@ function create$5() {
   out[15] = 1;
   return out;
 }
-function clone$5(a) {
-  var out = new ARRAY_TYPE(16);
-  out[0] = a[0];
-  out[1] = a[1];
-  out[2] = a[2];
-  out[3] = a[3];
-  out[4] = a[4];
-  out[5] = a[5];
-  out[6] = a[6];
-  out[7] = a[7];
-  out[8] = a[8];
-  out[9] = a[9];
-  out[10] = a[10];
-  out[11] = a[11];
-  out[12] = a[12];
-  out[13] = a[13];
-  out[14] = a[14];
-  out[15] = a[15];
-  return out;
-}
 function set$5(out, m00, m01, m02, m03, m10, m11, m12, m13, m20, m21, m22, m23, m30, m31, m32, m33) {
   out[0] = m00;
   out[1] = m01;
@@ -84,8 +64,8 @@ function identity$2(out) {
 }
 function translate$1(out, a, v) {
   var x = v[0],
-      y = v[1],
-      z = v[2];
+    y = v[1],
+    z = v[2];
   var a00, a01, a02, a03;
   var a10, a11, a12, a13;
   var a20, a21, a22, a23;
@@ -128,8 +108,8 @@ function translate$1(out, a, v) {
 }
 function scale$5(out, a, v) {
   var x = v[0],
-      y = v[1],
-      z = v[2];
+    y = v[1],
+    z = v[2];
   out[0] = a[0] * x;
   out[1] = a[1] * x;
   out[2] = a[2] * x;
@@ -150,8 +130,8 @@ function scale$5(out, a, v) {
 }
 function rotate$1(out, a, rad, axis) {
   var x = axis[0],
-      y = axis[1],
-      z = axis[2];
+    y = axis[1],
+    z = axis[2];
   var len = Math.hypot(x, y, z);
   var s, c, t;
   var a00, a01, a02, a03;
@@ -305,10 +285,61 @@ function lookAt(out, eye, center, up) {
   out[15] = 1;
   return out;
 }
+function viewInv(cameraPos, g) {//g是看向的方向
+  const out = new ARRAY_TYPE(16);
+  const X = vec3.create();
+  vec3.normalize(X, vec3.fromValues(-g[2], 0.0, g[0]));
+  const Y = vec3.create();
+  vec3.cross(Y, X, g);
+  vec3.normalize(Y, Y);
+  out[0] = X[0];
+  out[1] = X[1];
+  out[2] = X[2];
+  out[3] = 0.0;
+  out[4] = Y[0];
+  out[5] = Y[1];
+  out[6] = Y[2];
+  out[7] = 0.0;
+  out[8] = -g[0];
+  out[9] = -g[1];
+  out[10] = -g[2];
+  out[11] = 0.0;
+  out[12] = cameraPos[0];
+  out[13] = cameraPos[1];
+  out[14] = cameraPos[2];
+  out[15] = 1.0;
+  return out;
+}
+function multiplyForViewInv(out, a, b) {//专门为view矩阵逆矩阵设计的乘法
+  out[0] = a[0] * b[0] + a[4] * b[1] + a[8] * b[2] + a[12] * b[3];
+  out[1] = a[1] * b[0] + a[5] * b[1] + a[9] * b[2] + a[13] * b[3];
+  out[2] = a[2] * b[0] + a[6] * b[1] + a[10] * b[2] + a[14] * b[3];
+  out[3] = b[3];
+  out[4] = a[0] * b[4] + a[4] * b[5] + a[8] * b[6] + a[12] * b[7];
+  out[5] = a[1] * b[4] + a[5] * b[5] + a[9] * b[6] + a[13] * b[7];
+  out[6] = a[2] * b[4] + a[6] * b[5] + a[10] * b[6] + a[14] * b[7];
+  out[7] = b[7];
+  out[8] = a[0] * b[8] + a[4] * b[9] + a[8] * b[10] + a[12] * b[11];
+  out[9] = a[1] * b[8] + a[5] * b[9] + a[9] * b[10] + a[13] * b[11];
+  out[10] = a[2] * b[8] + a[6] * b[9] + a[10] * b[10] + a[14] * b[11];
+  out[11] = b[11];
+  out[12] = a[0] * b[12] + a[4] * b[13] + a[8] * b[14] + a[12] * b[15];
+  out[13] = a[1] * b[12] + a[5] * b[13] + a[9] * b[14] + a[13] * b[15];
+  out[14] = a[2] * b[12] + a[6] * b[13] + a[10] * b[14] + a[14] * b[15];
+  out[15] = b[15];
+  return out;
+}
+function mulV(out, a, v) {
+  out[0] = a[0] * v[0] + a[4] * v[1] + a[8] * v[2] + a[12] * v[3];
+  out[1] = a[1] * v[0] + a[5] * v[1] + a[9] * v[2] + a[13] * v[3];
+  out[2] = a[2] * v[0] + a[6] * v[1] + a[10] * v[2] + a[14] * v[3];
+  out[3] = a[3] * v[0] + a[7] * v[1] + a[11] * v[2] + a[15] * v[3];
+  return out;
+}
+
 var mat4 = /*#__PURE__*/Object.freeze({
   __proto__: null,
   create: create$5,
-  clone: clone$5,
   set: set$5,
   identity: identity$2,
   translate: translate$1,
@@ -316,6 +347,9 @@ var mat4 = /*#__PURE__*/Object.freeze({
   rotate: rotate$1,
   perspective: perspective,
   lookAt: lookAt,
+  viewInv: viewInv,
+  multiply: multiplyForViewInv,
+  mulV: mulV,
 });
 function create$4() {
   var out = new ARRAY_TYPE(3);
@@ -389,22 +423,19 @@ function normalize$4(out, a) {
   out[2] = a[2] * len;
   return out;
 }
-function cross$2(out,a,b)
-{
-  let ax = a[0],ay = a[1],az = a[2];
-  let bx = b[0],by = b[1],bz = b[2];
-  out[0]=ay*bz-az*by;
-  out[1]=az*bx-ax*bz;
-  out[2]=ax*by-ay*bx;
+function cross$2(out, a, b) {
+  let ax = a[0], ay = a[1], az = a[2];
+  let bx = b[0], by = b[1], bz = b[2];
+  out[0] = ay * bz - az * by;
+  out[1] = az * bx - ax * bz;
+  out[2] = ax * by - ay * bx;
   return out;
 }
-function equals(a,b)
-{
-  return Math.abs(a[0]-b[0])<EPSILON&&Math.abs(a[1]-b[1])<EPSILON&&Math.abs(a[2]-b[2])<EPSILON;
+function equals(a, b) {
+  return Math.abs(a[0] - b[0]) < EPSILON && Math.abs(a[1] - b[1]) < EPSILON && Math.abs(a[2] - b[2]) < EPSILON;
 }
-function length$1(a)
-{
-  return Math.sqrt(a[0]*a[0]+a[1]*a[1]+a[2]*a[2]);
+function length$1(a) {
+  return Math.sqrt(a[0] * a[0] + a[1] * a[1] + a[2] * a[2]);
 }
 var vec3 = Object.freeze({
   __proto__: null,
@@ -418,28 +449,24 @@ var vec3 = Object.freeze({
   scaleAndAdd: scaleAndAdd$2,
   normalize: normalize$4,
   cross: cross$2,
-  equals:equals,
-  length:length$1,
+  equals: equals,
+  length: length$1,
 });
-function create$6()
-{
-  var out=new ARRAY_TYPE(2);
-  out[0]=out[1]=0;
+function create$6() {
+  var out = new ARRAY_TYPE(2);
+  out[0] = out[1] = 0;
   return out;
 }
-function fromValues$5(a,b)
-{
-  var out=new ARRAY_TYPE(2);
-  out[0]=a;
-  out[1]=b;
+function fromValues$5(a, b) {
+  var out = new ARRAY_TYPE(2);
+  out[0] = a;
+  out[1] = b;
   return out;
 }
-function dist(a,b)
-{
-  return Math.hypot(a[0]-b[0],a[1]-b[1]);
+function dist(a, b) {
+  return Math.hypot(a[0] - b[0], a[1] - b[1]);
 }
-function normalize$3(out,a)
-{
+function normalize$3(out, a) {
   var x = a[0];
   var y = a[1];
   var len = x * x + y * y;
@@ -450,22 +477,31 @@ function normalize$3(out,a)
   out[1] = a[1] * len;
   return out;
 }
-function add$3(out,a,b)
-{
-  out[0]=a[0]+b[0];
-  out[1]=a[1]+b[1];
+function add$3(out, a, b) {
+  out[0] = a[0] + b[0];
+  out[1] = a[1] + b[1];
 }
-function scaleAndAdd$1(out,a,b,alpha)
-{
-  out[0]=a[0]+b[0]*alpha;
-  out[1]=a[1]+b[1]*alpha;
+function scaleAndAdd$1(out, a, b, alpha) {
+  out[0] = a[0] + b[0] * alpha;
+  out[1] = a[1] + b[1] * alpha;
   return out;
 }
-var vec2=Object.freeze({
-  create:create$6,
-  fromValues:fromValues$5,
-  dist:dist,
-  normalize:normalize$3,
-  add:add$3,
-  scaleAndAdd:scaleAndAdd$1,
+var vec2 = Object.freeze({
+  create: create$6,
+  fromValues: fromValues$5,
+  dist: dist,
+  normalize: normalize$3,
+  add: add$3,
+  scaleAndAdd: scaleAndAdd$1,
+})
+function fromValues$6(a, b, c, d) {
+  const out = new ARRAY_TYPE(4);
+  out[0] = a;
+  out[1] = b;
+  out[2] = c;
+  out[3] = d;
+  return out;
+}
+var vec4 = Object.freeze({
+  fromValues: fromValues$6,
 })
