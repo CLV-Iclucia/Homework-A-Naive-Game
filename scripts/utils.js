@@ -36,25 +36,25 @@ class Queue//手动模拟了一个简易的队列类，将用于储存所有特�
 //每种技能都只造成一段伤害
 //将玩家（虽然我偷懒没有做模型，但是得做碰撞检测）处理为圆柱体，给一个合理的半径为0.25
 //将玩家攻击范围划定为一个弧面，这可以通过运算来解决，不需要做一个单独的碰撞箱
-const DEFAULT=0,DISAPPEAR=1,NO_DAMAGE=2,BLOCKED=3,SOLID=4;//onhit的五种情况
+const DEFAULT=0,DISAPPEAR=1,NO_DAMAGE=2,BLOCKED=4,ASCENDING=8,POINTED=16;//作为type表示碰撞箱的属性
 class CollisionVolume//碰撞体类，这个就是用来结算伤害的
 {
-    constructor(damage,pos,y,r,h,onhit=DEFAULT)//提供圆柱体碰撞箱，底面都是水平的，特别的，当r=h=0时成为粒子
+    constructor(damage,pos,y,r,h,type=DEFAULT)//提供圆柱体碰撞箱，底面都是水平的，特别的，当r=h=0时成为粒子
     {
         this.damage=damage;
         this.pos=pos;
         this.y=y;
         this.r=r;
         this.h=h;
-        this.onhit=onhit;
+        this.type=type;
     }
     Collide(V)//返回当前碰撞箱与V是否相碰
     {
-        const VPos=V.getPos();
-        const VY=V.getY();
-        const Vh=V.getHeight();
+        const VPos=V.pos;
+        const VY=V.y;
+        const Vh=V.h;
         if(this.y+this.h<=VY||VY+Vh<=this.y)return false;
-        const Vr=V.getRadius();
+        const Vr=V.r;
         if((this.pos[0]-VPos[0])*(this.pos[0]-VPos[0])+(this.pos[1]-VPos[1])*(this.pos[1]-VPos[1])<=(Vr+this.r)*(Vr+this.r))return true;
         else return false;
     }
@@ -70,25 +70,9 @@ class CollisionVolume//碰撞体类，这个就是用来结算伤害的
     {
         this.pos=pos;
     }
-    getPos()
-    {
-        return this.pos;
-    }
     setY(y)
     {
         this.y=y;
-    }
-    getY()
-    {
-        return this.y;
-    }
-    getRadius()
-    {
-        return this.r;
-    }
-    getHeight()
-    {
-        return this.h;
     }
 }
 class LinkedListNode//用于挂链表
@@ -174,9 +158,9 @@ class CVManager//将空间分块，管理碰撞箱
         }
         return ret;
     }
-    create(damage,pos,y,r,h,onhit=DEFAULT)
+    create(damage,pos,y,r,h,type=DEFAULT)
     {
-        let newCV=new CollisionVolume(damage,pos,y,r,h,onhit);
+        let newCV=new CollisionVolume(damage,pos,y,r,h,type);
         const IDX=this.getIDX(pos,r);
         for(let i=0;i<IDX.length;i++)
             this.head[IDX[i]]=insert(this.head[IDX[i]],newCV);
@@ -184,8 +168,8 @@ class CVManager//将空间分块，管理碰撞箱
     }
     update(CV,pos,y)
     {
-        const IDX=this.getIDX(CV.getPos(),CV.getRadius());
-        const newIDX=this.getIDX(pos,CV.getRadius());
+        const IDX=this.getIDX(CV.pos,CV.r);
+        const newIDX=this.getIDX(pos,CV.r);
         CV.setPos(pos);
         CV.setY(y);
         for(let i=0;i<newIDX.length;i++)
@@ -199,17 +183,18 @@ class CVManager//将空间分块，管理碰撞箱
     }
     remove(CV)
     {
-        const IDX=this.getIDX(CV.getPos(),CV.getRadius());
+        const IDX=this.getIDX(CV.pos,CV.r);
         for(let i=0;i<IDX.length;i++)
             this.head[IDX[i]]=remove(this.head[IDX[i]],CV);
     }
-    updateOnHit(CV,onhit)
+    updateType(CV,type,opt)//更新某个碰撞箱的属性
     {
-        CV.onhit=onhit;
+        if(opt)CV.type|=type;
+        else CV.type^=type;
     }
-    DetectCollision(CV,isplayer=true)//对CV与周围的环境进行碰撞检测，同时进行结算
+    DetectCollision(currentFrame,CV,isplayer=true)//对CV与周围的环境进行碰撞检测，同时进行结算
     {
-        const IDX=this.getIDX(CV.getPos(),CV.getRadius());
+        const IDX=this.getIDX(CV.pos,CV.r);
         for(let i=0;i<IDX.length;i++)
         {
             for(let nd=this.head[IDX[i]];nd!=null;nd=nd.nxt)
@@ -217,36 +202,44 @@ class CVManager//将空间分块，管理碰撞箱
                 let V=nd.CV;
                 if(CV.Collide(V))
                 {
-                    if(isplayer)HP-=V.getDamage();
-                    if(V.onhit==DISAPPEAR)
+                    if(isplayer)//先做伤害结算
+                    {
+                        if(unhurtTime<currentFrame)
+                        {
+                            if(!(V.type&POINTED)||((V.type&POINTED)&&CV.y>=V.y+V.h-0.1))
+                            {
+                                HP-=V.damage;
+                                console.log(CV.y,V.y,V.h,V.damage,V.type&NO_DAMAGE);
+                                unhurtTime=currentFrame+0.0006;
+                            }
+                        }
+                    }
+                    if(V.type&DISAPPEAR)//碰撞即消失
                     {
                         this.remove(V);
                         V=null;
                     }
                     else
                     {
-                        if(V.onhit==NO_DAMAGE)V.setDamage(0);
-                        else if(V.onhit==SOLID)
+                        if(!isplayer)continue;
+                        if(V.type&NO_DAMAGE)V.setDamage(0);
+                        if(V.type&BLOCKED)
                         {
-                            V.setDamage(0);
-                            V.onhit==BLOCKED;
-                        }
-                        if(V.onhit==BLOCKED)//此时需要把CV往外推或者往上顶
-                        {
-                            let dir=vec2.fromValues(CV.getPos()[0]-V.getPos()[0],CV.getPos()[1]-V.getPos()[1]);
+                            let dir=vec2.fromValues(CV.pos[0]-V.pos[0],CV.pos[1]-V.pos[1]);
                             const length=Math.hypot(dir[0],dir[1]);
-                            console.log(length);
-                            if(length<=1.0)
+                            if(V.type&ASCENDING)//如果在上升，那就把玩家撞起来
                             {
+                                if((V.type&POINTED)&&length>V.r)continue;//特别的，如果是尖顶，那就只在比较靠近中心时撞起来
                                 inAir=1;
                                 velocity=80.0;
-                                CV.setY(V.getY()+V.getHeight());
+                                CV.setY(V.y+V.h+3.0);
                             }
                             else
                             {
+                                if(length==0.0)HP=0.0;
                                 dir[0]/=length;
                                 dir[1]/=length;
-                                vec2.scaleAndAdd(CV.pos,V.getPos(),dir,CV.getRadius()+V.getRadius());
+                                vec2.scaleAndAdd(CV.pos,V.pos,dir,CV.r+V.r);
                             }
                         }
                     }

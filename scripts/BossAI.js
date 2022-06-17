@@ -61,7 +61,7 @@ function runBossAI(currentTime)//有玩家位置和Boss位置
 {
     const opt=Math.floor(Math.random()*500);
     if(opt==1||opt==4)genLaser(currentTime);
-    if(opt==2||opt==3)
+    if(opt==2)
     {
         const theta=Math.PI*2.0*Math.random();
         genThorn(currentTime,Math.cos(theta),Math.sin(theta));

@@ -12,7 +12,7 @@ const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(0.6,0.0,0.0)
 mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
 mat4.perspective(lightProj,45*Math.PI/180.0,canvas.width/canvas.height,5.0,100.0);
 let cameraPos=vec3.fromValues(0.0,0.0,2.0),cameraFront=vec3.fromValues(0.0,0.0,-1.0),cameraUp=vec3.fromValues(0.0,1.0,0.0);
-let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt;
+let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt,unhurtTime=0.0;
 let bossModel=mat4.create();
 let inAir=false;
 let stamina=1.0,HP=1.0;
@@ -207,8 +207,8 @@ function main()
         processInput(currentFrame);
 		PlayerCV.setPos(vec2.fromValues(cameraPos[0],cameraPos[2]));
 		PlayerCV.setY(cameraPos[1]);
-		CVM.DetectCollision(PlayerCV);
-		cameraPos=vec3.fromValues(PlayerCV.getPos()[0],PlayerCV.getY(),PlayerCV.getPos()[1]);
+		CVM.DetectCollision(currentFrame,PlayerCV);
+		cameraPos=vec3.fromValues(PlayerCV.pos[0],PlayerCV.y,PlayerCV.pos[1]);
 		if(HP<0.0)HP=0.0;
 		BossDir+=Math.random()*0.02;
 		let BossFront=vec3.fromValues(Math.cos(BossDir),0.0,Math.sin(BossDir));
@@ -252,7 +252,7 @@ function main()
 		renderObject(BossShader,BossVar,BossVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
-		vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.05);
+	//	vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.05);
         requestAnimationFrame(gameLoop);
     }
     requestAnimationFrame(gameLoop);

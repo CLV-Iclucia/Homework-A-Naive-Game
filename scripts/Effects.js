@@ -80,7 +80,7 @@ function processThorn(currentTime)//渲染场景中的地刺
         mat4.identity(model);
         const alpha=(currentTime-cmd.trigTime)/4.0;
         let trans=vec3.clone(cmd.P);
-        if(cmd.CV==null)cmd.CV=CVM.create(0.6,vec2.fromValues(cmd.P[0],cmd.P[2]),-4.0,1.0,3.0,SOLID);
+        if(cmd.CV==null)cmd.CV=CVM.create(0.6,vec2.fromValues(cmd.P[0],cmd.P[2]),-5.0,1.0,3.0,BLOCKED|POINTED|ASCENDING);
         if(alpha<0.05)
         {
             trans[1]=80*alpha-5.0;
@@ -88,8 +88,7 @@ function processThorn(currentTime)//渲染场景中的地刺
         }
         else
         {
-            CVM.updateOnHit(cmd.CV,BLOCKED);
-            cmd.CV.setDamage(0);
+            CVM.updateType(cmd.CV,ASCENDING,0);
             if(alpha<=0.95) 
             {
                 CVM.updateY(cmd.CV,-1.0);
