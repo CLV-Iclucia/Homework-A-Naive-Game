@@ -247,7 +247,7 @@ function main()
 			}
 		}
 		cameraPos=vec3.fromValues(PlayerCV.pos[0],PlayerCV.y,PlayerCV.pos[1]);
-		BossDir+=Math.random()*0.02;
+		BossDir+=Math.random()*0.01;
 		let BossFront=vec3.fromValues(Math.cos(BossDir),0.0,Math.sin(BossDir));
 		mat4.lookAt(lightView,vec3.scaleAndAdd(tmp,BossPos,lightPos,0.5),BossPos,vec3.clone([0.0,1.0,0.0]));
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
@@ -292,7 +292,7 @@ function main()
 		renderObject(BossShader,BossVar,BossVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
-		vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.05);
+		vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.02);
         CVM.update(BossCV,vec2.fromValues(BossPos[0],BossPos[2]),BossPos[1]);
 		requestAnimationFrame(gameLoop);
     }
