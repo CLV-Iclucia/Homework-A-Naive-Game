@@ -161,7 +161,7 @@ function rotate$1(out, a, rad, axis) {
   a20 = a[8];
   a21 = a[9];
   a22 = a[10];
-  a23 = a[11]; // Construct the elements of the rotation matrix
+  a23 = a[11]; 
   b00 = x * x * t + c;
   b01 = y * x * t + z * s;
   b02 = z * x * t - y * s;
@@ -170,7 +170,7 @@ function rotate$1(out, a, rad, axis) {
   b12 = z * y * t + x * s;
   b20 = x * z * t + y * s;
   b21 = y * z * t - x * s;
-  b22 = z * z * t + c; // Perform rotation-specific matrix multiplication
+  b22 = z * z * t + c; 
   out[0] = a00 * b00 + a10 * b01 + a20 * b02;
   out[1] = a01 * b00 + a11 * b01 + a21 * b02;
   out[2] = a02 * b00 + a12 * b01 + a22 * b02;
@@ -184,7 +184,6 @@ function rotate$1(out, a, rad, axis) {
   out[10] = a02 * b20 + a12 * b21 + a22 * b22;
   out[11] = a03 * b20 + a13 * b21 + a23 * b22;
   if (a !== out) {
-    // If the source and destination differ, copy the unchanged last row
     out[12] = a[12];
     out[13] = a[13];
     out[14] = a[14];
@@ -336,7 +335,6 @@ function mulV(out, a, v) {
   out[3] = a[3] * v[0] + a[7] * v[1] + a[11] * v[2] + a[15] * v[3];
   return out;
 }
-
 var mat4 = /*#__PURE__*/Object.freeze({
   __proto__: null,
   create: create$5,
@@ -480,11 +478,20 @@ function normalize$3(out, a) {
 function add$3(out, a, b) {
   out[0] = a[0] + b[0];
   out[1] = a[1] + b[1];
+  return out;
+}
+function subtract$3(out, a, b) {
+  out[0] = a[0] - b[0];
+  out[1] = a[1] - b[1];
+  return out;
 }
 function scaleAndAdd$1(out, a, b, alpha) {
   out[0] = a[0] + b[0] * alpha;
   out[1] = a[1] + b[1] * alpha;
   return out;
+}
+function dot(a, b) {
+  return a[0]*b[0]+a[1]*b[1];
 }
 var vec2 = Object.freeze({
   create: create$6,
@@ -493,6 +500,8 @@ var vec2 = Object.freeze({
   normalize: normalize$3,
   add: add$3,
   scaleAndAdd: scaleAndAdd$1,
+  subtract:subtract$3,
+  dot:dot,
 })
 function fromValues$6(a, b, c, d) {
   const out = new ARRAY_TYPE(4);

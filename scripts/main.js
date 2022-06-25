@@ -1,131 +1,8 @@
-const gl=canvas.getContext("webgl2"); 
 function Reset()
 {
     canvas.height= document.documentElement.clientHeight;
     canvas.width = document.documentElement.clientWidth; 
     gl.viewport(0,0,canvas.width,canvas.height);
-}
-let view=mat4.create();
-let proj=mat4.create(),lightProj=mat4.create();
-const lightView=mat4.create();
-const lightPos=vec3.fromValues(40,16,16),lightColor=vec3.fromValues(0.6,0.0,0.0);
-mat4.perspective(proj,45*Math.PI/180.0,canvas.width/canvas.height,0.1,100.0);
-mat4.perspective(lightProj,45*Math.PI/180.0,canvas.width/canvas.height,5.0,100.0);
-let cameraPos=vec3.fromValues(-25.0,0.0,25.0),cameraFront=vec3.fromValues(0.0,0.0,-1.0),cameraUp=vec3.fromValues(0.0,1.0,0.0);
-let deltaFrame,dashEndFrame=0,velocity=0,tmp=vec3.create(),dashDir=vec3.create(),ATKEndFrame,ATKopt,unhurtTime=0.0;
-let BossunhurtTime=0.0;
-let bossModel=mat4.create();
-let inAir=false;
-let stamina=1.0,HP=1.0;
-let BossPos=vec3.fromValues(0.0,0.0,0.0),BossDir=0;
-const BarModelBase=mat4.create(),BarModel=mat4.create(),BossBarModelBase=mat4.create();
-mat4.translate(BarModelBase,BarModelBase,vec3.fromValues(-0.9,0.0,0.0));
-mat4.translate(BossBarModelBase,BossBarModelBase,vec3.fromValues(-0.5,-1.5,0.0));
-let phase=1;
-const SkyBoxShader=initShader(gl,SkyBoxVertexShader,SkyBoxFragmentShader);
-const BossShader=initShader(gl,BossVertexShader,BossFragmentShader);
-const FloorShader=initShader(gl,FloorVertexShader,FloorFragmentShader);
-const SkyBoxTex=initSkyBoxTexture(gl);
-const SkyBoxVAO=initModel(gl,SkyBoxShader,SkyBoxVer,BoxIdx,3);
-const SwordShader=initShader(gl,SwordVertexShader,SwordFragmentShader);
-const SwordVAO=initModel(gl,SwordShader,SwordVer,SwordIdx,6);
-const BossVAO=initModel(gl,BossShader,BossHeadVer,BossHeadIdx,8);
-const FloorVAO=initModel(gl,FloorShader,FloorVer,BarIdx,5);
-const BossHeadTex=initTex(gl,"head",true);
-const FloorTex=initTex(gl,"floor",true);
-const NormalMap=initTex(gl,"norm",false);
-const CircleShader=initShader(gl,CircleVertexShader,CircleFragmentShader);
-const CircleVAO=initModel(gl,CircleShader,TexSq,BarIdx,5);
-const CircleTex=initTex(gl,"ring",true);
-const LaserShader=initShader(gl,LaserVertexShader,LaserFragmentShader);
-const LaserVAO=initModel(gl,LaserShader,Cylinder,CylinderIdx,3);
-const ThornShader=initShader(gl,ThornVertexShader,ThornFragmentShader);
-const ThornVAO=initModel(gl,ThornShader,Cone,ConeIdx,6);
-const BarShader=initShader(gl,BarVertexShader,BarFragmentShader);
-const HPVAO=initModel(gl,BarShader,HPver,BarIdx,3);
-const SPVAO=initModel(gl,BarShader,SPver,BarIdx,3);
-const PlayerCV=new CollisionVolume(0,vec2.fromValues(cameraPos[0],cameraPos[2]),-1.0,0.5,1.0);
-const CVM=new CVManager();
-const CircleQ=new Queue();//这些队列都用于存放并管理特效
-const CylinderQ=new Queue();
-const ConeQ=new Queue();
-let BossHP=2.0;
-const SwdTipCV=CVM.create(0.0,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0,0.0,0.0);
-const SwdBladeCV=CVM.create(0.0,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0,0.0,0.0);
-function processInput(currentFrame)
-{
-    const dir=vec3.fromValues(cameraFront[0],0.0,cameraFront[2]),vdir=vec3.fromValues(0.0,1.0,0.0);
-    vec3.normalize(dir,dir);
-	vec3.cross(vdir,vdir,dir);
-	let spd = 4.5*deltaFrame;
-    if(currentFrame >= dashEndFrame)//冲刺阶段不能处理平面移动
-	{
-		if (W)vec3.scaleAndAdd(cameraPos,cameraPos,dir,spd);
-		if (S)vec3.scaleAndAdd(cameraPos,cameraPos,dir,-spd);
-		if (A)vec3.scaleAndAdd(cameraPos,cameraPos,vdir,spd);
-		if (D)vec3.scaleAndAdd(cameraPos,cameraPos,vdir,-spd);
-		if(cameraPos[0]< -BOUND)cameraPos[0]=-BOUND;
-		if(cameraPos[0]>BOUND)cameraPos[0]=BOUND;
-		if(cameraPos[2]< -BOUND)cameraPos[2]=-BOUND;
-		if(cameraPos[2]>BOUND)cameraPos[2]=BOUND;
-	}
-	else
-	{
-		spd = 10.0*deltaFrame;
-        vec3.scaleAndAdd(cameraPos,cameraPos,dashDir,spd);
-		if(cameraPos[0]< -BOUND)cameraPos[0]=-BOUND;
-		if(cameraPos[0]>BOUND)cameraPos[0]=BOUND;
-		if(cameraPos[2]< -BOUND)cameraPos[2]=-BOUND;
-		if(cameraPos[2]>BOUND)cameraPos[2]=BOUND;
-	}
-	if (SPACE)
-	{
-		if (stamina>=0.1 &&!inAir)
-		{
-			inAir = true;
-			velocity = 45.0;
-			stamina-=0.1;
-		}
-	}
-	if (LSHIFT)
-	{
-		if(stamina>=0.1&&currentFrame>=dashEndFrame)
-		{
-			dashEndFrame = currentFrame + 0.3;
-			dashDir=[0.0,0.0,0.0];
-			if (W)vec3.add(dashDir,dashDir,dir);
-			if (S)vec3.subtract(dashDir,dashDir,dir);
-			if (A)vec3.add(dashDir,dashDir,vdir);
-			if (D)vec3.subtract(dashDir,dashDir,vdir);
-			if (vec3.equals(dashDir,[0.0,0.0,0.0]))dashDir=dir;
-			else vec3.normalize(dashDir,dashDir);
-			if(cameraPos[0]< -BOUND)cameraPos[0]=-BOUND;
-			if(cameraPos[0]>BOUND)cameraPos[0]=BOUND;
-			if(cameraPos[2]< -BOUND)cameraPos[2]=-BOUND;
-			if(cameraPos[2]>BOUND)cameraPos[2]=BOUND;
-			stamina -= 0.1;
-		}
-	}
-	if (MLB)
-	{
-		if (stamina>=0.1&&currentFrame > ATKEndFrame)//更新攻击结束帧
-		{
-			ATKEndFrame=currentFrame+0.3;
-			if(currentFrame<ATKEndFrame+0.2)ATKopt^=1;
-			else ATKopt=0;
-			stamina-=0.1;
-		}
-	}
-	if (inAir)
-	{
-        vec3.add(cameraPos,cameraPos,vec3.scale(tmp,cameraUp,0.2*velocity*deltaFrame));
-		velocity -= 1.5;
-		if (cameraPos[1] <= 0.0)
-		{
-			cameraPos[1] = 0.0;
-			inAir = 0;
-		}
-    }
 }
 function renderObject(Shader,UniVar,VAO,tot,Tex=null)//传入着色器程序，uniform变量列表，顶点数组对象VAO和三角面个数tot来绘制对象
 {
@@ -155,45 +32,45 @@ function Rotate(M,p,theta,A)//使得物体绕着自身坐标系中的p点A轴旋
 	M = mat4.translate(M,M,p);
 	return M;
 }
-function MoveSwd(currentFrame)//移动剑，顺便移动剑尖和剑身上的碰撞箱
+function MoveSwd(currentTime)//移动剑，顺便移动剑尖和剑身上的碰撞箱
 {
 	let model=mat4.create();
 	let isAttacking=false;
-	if (currentFrame <= ATKEndFrame)//攻击状态
+	if (currentTime <= ATKEndFrame)//攻击状态
 	{
-		if(currentFrame>=ATKEndFrame-0.3)
+		if(currentTime>=ATKEndFrame-0.3)
 		{
-			const theta = ATKEndFrame - currentFrame;
+			const theta = ATKEndFrame - currentTime;
 			if(!ATKopt)
 			{
-				model = mat4.translate(model,model, vec3.clone([-0.1, -0.2, -0.2]));
-				model = mat4.rotate(model,model, -45.0*Math.PI/180, vec3.clone([0.0,0.0,1.0]));
-				model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*(0.3-theta), vec3.clone([-1.0,0.0,0.0]));
+				model = mat4.translate(model,model, vec3.fromValues(-0.1, -0.2, -0.2));
+				model = mat4.rotate(model,model, -45.0*Math.PI/180, vec3.fromValues(0.0,0.0,1.0));
+				model = Rotate(model,vec3.fromValues(0.0,-0.5,0.0),10*(0.3-theta), vec3.fromValues(-1.0,0.0,0.0));
 				isAttacking=true;
 			}
 			else
 			{
-				model = mat4.translate(model,model, vec3.clone([0.1, 0.0, -0.2]));
-				model = mat4.rotate(model,model, 110.0*Math.PI/180, vec3.clone([0.0, 0.0, 1.0]));
-				model = Rotate(model,vec3.clone([0.0,-0.5,0.0]),10*( 0.3 - theta), vec3.clone([-1.0,0.0,0.0]));
+				model = mat4.translate(model,model, vec3.fromValues(0.1, 0.0, -0.2));
+				model = mat4.rotate(model,model, 110.0*Math.PI/180, vec3.fromValues(0.0, 0.0, 1.0));
+				model = Rotate(model,vec3.fromValues(0.0,-0.5,0.0),10*( 0.3 - theta), vec3.fromValues(-1.0,0.0,0.0));
 				isAttacking=true;
 			}
 		}
 		else
 		{
 			mat4.set(model,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
-			CVM.update(SwdBladeCV,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0);
-			CVM.update(SwdTipCV,vec2.fromValues(cameraPos[0],cameraPos[1]),0.0);
+			CVM.update(SwdBladeCV,vec2.fromValues(cameraPos[0],cameraPos[2]),-2.0);
+			CVM.update(SwdTipCV,vec2.fromValues(cameraPos[0],cameraPos[2]),-2.0);
 		}
 	}
 	else 
 	{
-		model = mat4.translate(model,model, vec3.clone([0.3, -0.2, -0.5]));//结束了第二刀，处于未攻击状态
-		CVM.update(SwdBladeCV,vec2.fromValues(cameraPos[0],cameraPos[2]),0.0);
-		CVM.update(SwdTipCV,vec2.fromValues(cameraPos[0],cameraPos[2]),0.0);
+		model = mat4.translate(model,model, vec3.fromValues(0.3, -0.2, -0.5));//结束了第二刀，处于未攻击状态
+		CVM.update(SwdBladeCV,vec2.fromValues(cameraPos[0],cameraPos[2]),-2.0);
+		CVM.update(SwdTipCV,vec2.fromValues(cameraPos[0],cameraPos[2]),-2.0);
 		ATKopt=1;
 	}
-	mat4.scale(model,model,vec3.clone([0.05,0.05,0.05]));
+	mat4.scale(model,model,vec3.fromValues(0.05,0.05,0.05));
 	if(isAttacking)
 	{
 		const viewInvMatrix=mat4.viewInv(cameraPos,cameraFront);
@@ -204,7 +81,7 @@ function MoveSwd(currentFrame)//移动剑，顺便移动剑尖和剑身上的碰
 		mat4.mulV(TipV,transform,TipV);
 		mat4.mulV(BladeV,transform,BladeV);
 		CVM.update(SwdTipCV,vec2.fromValues(TipV[0],TipV[2]),TipV[1]);
-		CVM.update(SwdBladeCV,vec2.fromValues(BladeV[0],BladeV[1]),BladeV[1]);
+		CVM.update(SwdBladeCV,vec2.fromValues(BladeV[0],BladeV[2]),BladeV[1]);
 	}
 	return model;
 }
@@ -213,68 +90,79 @@ function main()
     Reset();
     if (!gl) 
     {
-        alert("无法初始化WebGL，你的浏览器、操作系统或硬件等可能不支持WebGL。");
+        alert("无法初始化WebGL,你的浏览器、操作系统或硬件等可能不支持WebGL。");
         return;
     }
     let lastFrame=0;
-	ATKEndFrame=0;
-	ATKopt=1;
 	console.log("Start Game Loop");
 	const ShadowShader=initShader(gl,ShadowVertexShader,ShadowFragmentShader);
 	const BossVAO_S=initModel(gl,ShadowShader,BossHeadVer,BossHeadIdx,8);
 	const FloorVAO_S=initModel(gl,ShadowShader,FloorVer,BarIdx,5);
 	const ShadowFBO=initFrameBuffer(gl);
-	let BossCV=CVM.create(0.0,vec2.fromValues(BossPos[0],BossPos[2]),BossPos[1],0.35,1.0,BLOCKED);
-    function gameLoop(currentFrame)
+	console.log(BGM.src);
+    function gameLoop(currentTime)
     {
-        currentFrame*=0.001;
-        deltaFrame=currentFrame-lastFrame;
-        lastFrame=currentFrame;
-		stamina+=deltaFrame*0.1;
+        currentTime*=0.001;
+        deltaFrame=currentTime-lastFrame;
+        lastFrame=currentTime;
+		stamina+=deltaFrame*0.04;
 		if(stamina>=1.0)stamina=1.0;
-        processInput(currentFrame);
+        processInput(currentTime);
+		const swordModel=MoveSwd(currentTime);
+		runBossAI(currentTime);
+		EyePos[0]=BossPos[0];
+		EyePos[1]=BossPos[1]+2.0;
+		EyePos[2]=BossPos[2];
+        CVM.update(BossCV,vec2.fromValues(BossPos[0],BossPos[2]),BossPos[1]);
 		PlayerCV.setPos(vec2.fromValues(cameraPos[0],cameraPos[2]));
-		PlayerCV.setY(cameraPos[1]);
-		CVM.DetectCollision(currentFrame,PlayerCV);
-		cameraPos=vec3.fromValues(PlayerCV.pos[0],PlayerCV.y,PlayerCV.pos[1]);
+		PlayerCV.setY(cameraPos[1]-1.0);
+		CVM.DetectCollision(currentTime,PlayerCV);
 		if(HP<0.0)HP=0.0;
-		if(currentFrame>BossunhurtTime)
+		if(currentTime>BossunhurtTime)
 		{
 			if(SwdTipCV.Collide(BossCV)||SwdBladeCV.Collide(BossCV))
 			{
-				BossHP-=0.05;
-				BossunhurtTime=currentFrame+0.1;
+				BossHP-=0.05*phase;
+				BossunhurtTime=currentTime+0.25;
+				if(BossHP<1.0)phase=2;
 			}
 		}
-		cameraPos=vec3.fromValues(PlayerCV.pos[0],PlayerCV.y,PlayerCV.pos[1]);
-		BossDir+=Math.random()*0.01;
-		let BossFront=vec3.fromValues(Math.cos(BossDir),0.0,Math.sin(BossDir));
-		mat4.lookAt(lightView,vec3.scaleAndAdd(tmp,BossPos,lightPos,0.5),BossPos,vec3.clone([0.0,1.0,0.0]));
+		cameraPos[0]=PlayerCV.pos[0];
+		cameraPos[1]=PlayerCV.y+1.0;
+		cameraPos[2]=PlayerCV.pos[1];
+		mat4.lookAt(lightView,lightPos,BossPos,vec3.fromValues(0.0,1.0,0.0));
         mat4.lookAt(view,cameraPos,vec3.add(tmp,cameraPos,cameraFront),cameraUp);
-		const bossModel=mat4.create();
-		mat4.translate(bossModel,bossModel,BossPos);
-		mat4.rotate(bossModel,bossModel,BossDir,vec3.fromValues(0.0,1.0,0.0));
 		gl.bindFramebuffer(gl.FRAMEBUFFER,ShadowFBO);
 		gl.viewport(0,0,canvas.width,canvas.height);
 		gl.clearColor(0.0,0.0,0.0,1.0);
 		gl.clear(gl.COLOR_BUFFER5_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
-		const Var=[['mat4',lightView],['mat4',lightProj],['mat4',mat4.create()]];
+		const Var=[['mat4',lightView],['mat4',lightProj],['mat4',Identity]];
 		renderObject(ShadowShader,Var,FloorVAO_S,6,ShadowFBO.texture);
-		Var[2]=['mat4',bossModel];
+		Var[2]=['mat4',BossModel];
 		renderObject(ShadowShader,Var,BossVAO_S,36,ShadowFBO.texture);
 		gl.bindFramebuffer(gl.FRAMEBUFFER,null);
 		gl.viewport(0,0,canvas.width,canvas.height);
 		gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
+		const EyeModel=mat4.create();
+		mat4.set(EyeModel,BossDir[0],0.0,BossDir[1],0.0,0.0,1.0,0.0,0.0,-BossDir[1],0.0,BossDir[0],0.0,EyePos[0],EyePos[1],EyePos[2],1.0);
+		let EyesVar=[['mat4',mat4.create()],['mat4',view],['mat4',proj],['sampler',0]];
+		for(let i=0;i<16;i++)
+		{
+			EyesVar[3][1]=Eyestex[i];
+			mat4.translate(EyesVar[0][1],EyeModel,EyesPos[i]);
+			mat4.scale(EyesVar[0][1],EyesVar[0][1],vec3.fromValues(0.5,0.5,0.5));
+			renderObject(BulletsShader,EyesVar,BulletsVAO,36);
+		}
 		const SkyBoxVar=[['mat4',view],['mat4',proj],['sampler',SkyBoxTex]];
-		const swordModel=MoveSwd(currentFrame);
 		const SwordVar=[['mat4',proj],['mat4',swordModel]];
-		const BossVar=[['mat4',view],['mat4',proj],['mat4',bossModel],['sampler',BossHeadTex],
-						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
+		const BossVar=[['mat4',view],['mat4',proj],['mat4',BossModel],['sampler',BossHeadTex],
+						['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor]];
 		const FloorVar=[['mat4',view],['mat4',lightView],['mat4',proj],['mat4',lightProj],['sampler',FloorTex],['sampler',TexCnt-1],['sampler',NormalMap],
 						['vec3',cameraFront],['vec3',cameraPos],['vec3',lightPos],['vec3',lightColor],['vec2',[1.0/canvas.width,1.0/canvas.height]]];
+		const EyeVar=[['mat4',EyeModel],['mat4',view],['mat4',proj],['sampler',EyeTex]];
 		mat4.scale(BarModel,BarModelBase,vec3.fromValues(stamina,1.0,1.0));
 		const BarVar=[['mat4',BarModel],['vec3',vec3.fromValues(0.0,0.8,0.4)]];
 		renderObject(BarShader,BarVar,SPVAO,6);
@@ -284,16 +172,15 @@ function main()
 		mat4.scale(BarModel,BossBarModelBase,vec3.fromValues(BossHP,1.0,1.0));
 		BarVar[1][1]=vec3.fromValues(1.0,0.0,0.0);
 		renderObject(BarShader,BarVar,HPVAO,6);
-		runBossAI(currentFrame);
-		renderCircle(currentFrame);
-		processLaser(currentFrame);
-		processThorn(currentFrame);
+		renderCircle(currentTime);
+		processLaser(currentTime);
+		processThorn(currentTime);
+		processBullets(currentTime);
 		renderObject(SwordShader,SwordVar,SwordVAO,558);
 		renderObject(BossShader,BossVar,BossVAO,36);
+		renderObject(BulletsShader,EyeVar,BulletsVAO,36);
 		renderObject(FloorShader,FloorVar,FloorVAO,6,ShadowFBO.texture);
 		renderObject(SkyBoxShader,SkyBoxVar,SkyBoxVAO,36);
-		vec3.scaleAndAdd(BossPos,BossPos,BossFront,0.02);
-        CVM.update(BossCV,vec2.fromValues(BossPos[0],BossPos[2]),BossPos[1]);
 		requestAnimationFrame(gameLoop);
     }
     requestAnimationFrame(gameLoop);

@@ -1,3 +1,4 @@
+let TexCnt=0;
 const ImgName=
 [
     "rt.png","lf.png","up.png","dn.png","ft.png","bk.png"

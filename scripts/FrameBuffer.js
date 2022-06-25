@@ -1,4 +1,3 @@
-let TexCnt=0;
 function initFrameBuffer(gl)
 {
     let FBO=gl.createFramebuffer();

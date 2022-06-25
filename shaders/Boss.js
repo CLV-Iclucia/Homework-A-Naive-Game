@@ -21,7 +21,6 @@ const BossFragmentShader=
 varying highp vec3 aNorm;
 varying highp vec2 aTexCoord;
 uniform sampler2D myTex;
-uniform highp vec3 viewDir;
 uniform highp vec3 viewPos;
 uniform	highp vec3 lightPos;
 uniform highp vec3 lightColor;

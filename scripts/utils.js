@@ -1,3 +1,4 @@
+//一些有用的数据结构
 class Queue//手动模拟了一个简易的队列类，将用于储存所有特效的绘制指令
 {
     constructor()
@@ -73,6 +74,10 @@ class CollisionVolume//碰撞体类，这个就是用来结算伤害的
     {
         this.y=y;
     }
+    setType(type)
+    {
+        this.type=type;
+    }
 }
 class LinkedListNode//用于挂链表
 {
@@ -97,7 +102,7 @@ function insert(Head,CV)
     Head=newNode;
     return Head;
 }
-function remove(Head,CV)//实际上在同一个块中的碰撞箱不会很多，因此这里操作不会很慢，没必要写平衡树
+function remove(Head,CV)//实际上在同一个块中的碰撞箱不会很多，因此这里操作不会很慢，没必要写平衡树来管理
 {
     if(Head==null)return null;
     if(Head.CV==CV)
@@ -120,7 +125,7 @@ function remove(Head,CV)//实际上在同一个块中的碰撞箱不会很多，
     }
     return Head;
 }
-class CVManager//将空间分块，管理碰撞箱
+class CVManager//将空间分块，管理碰撞箱，实际上应该写空间分割树比较好，但是太麻烦了也没时间写那么多。。。
 {
     constructor()
     {
@@ -182,6 +187,7 @@ class CVManager//将空间分块，管理碰撞箱
     }
     remove(CV)
     {
+        if(CV==null)return ;
         const IDX=this.getIDX(CV.pos,CV.r);
         for(let i=0;i<IDX.length;i++)
             this.head[IDX[i]]=remove(this.head[IDX[i]],CV);
@@ -189,7 +195,7 @@ class CVManager//将空间分块，管理碰撞箱
     updateType(CV,type,opt)//更新某个碰撞箱的属性
     {
         if(opt)CV.type|=type;
-        else CV.type^=type;
+        else if(CV.type&type)CV.type^=type;
     }
     DetectCollision(currentFrame,CV,isplayer=1)//对CV与周围的环境进行碰撞检测，同时进行结算，isplayer=1表示对玩家进行检测，isplayer=2表示检测玩家武器伤害
     {
@@ -208,7 +214,7 @@ class CVManager//将空间分块，管理碰撞箱
                             if(!(V.type&POINTED)||((V.type&POINTED)&&CV.y>=V.y+V.h-0.1))
                             {
                                 HP-=V.damage;
-                                unhurtTime=currentFrame+0.0006;
+                                unhurtTime=currentFrame+0.001;
                             }
                         }
                     }
@@ -246,3 +252,12 @@ class CVManager//将空间分块，管理碰撞箱
         }
     }
 }
+const PlayerCV=new CollisionVolume(0,vec2.fromValues(cameraPos[0],cameraPos[2]),-1.0,0.4,1.0);
+const CVM=new CVManager();
+const CircleQ=new Queue();//这些队列都用于存放并管理特效
+const CylinderQ=new Queue();
+const ConeQ=new Queue();
+const BulletsQ=new Queue();
+const SwdTipCV=CVM.create(0.0,vec2.fromValues(cameraPos[0],cameraPos[2]),0.0,0.0,0.0);
+const SwdBladeCV=CVM.create(0.0,vec2.fromValues(cameraPos[0],cameraPos[2]),0.0,0.0,0.0);
+let BossCV=CVM.create(0.0,vec2.fromValues(BossPos[0],BossPos[2]),BossPos[1],0.45,1.0,BLOCKED);
