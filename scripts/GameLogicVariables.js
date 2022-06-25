@@ -32,3 +32,5 @@ for(let i=0;i<16;i++)
     EyesPos[i]=vec3.fromValues(dx,dy,dz);
     vec3.normalize(EyesPos[i],EyesPos[i]);
 }
+const VICTORY=1,DIE=2;
+let ending=0;

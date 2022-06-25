@@ -3,48 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <title>Web</title>
-    <script src="./gl-matrix.js"></script>
+    <link rel="stylesheet" href="./styles/styleTitleScreen.css"></link>
 </head>
-<body onload="main()">
-    <audio id="BGM" src="./BGM/BipolarNightmare.mp3" preload="auto" loop="true"></audio>
-    <img src="./Textures/SkyBox/Level-2/rt.png" id="Level-1/rt.png" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/SkyBox/Level-2/lf.png" id="Level-1/lf.png" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/SkyBox/Level-2/up.png" id="Level-1/up.png" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/SkyBox/Level-2/dn.png" id="Level-1/dn.png" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/SkyBox/Level-2/ft.png" id="Level-1/ft.png" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/SkyBox/Level-2/bk.png" id="Level-1/bk.png" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/Boss/head.png" id="head" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/Boss/Bullets.png" id="bullets" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/Floor/floor_2.png" id="floor" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/Effects/ring.png" id="ring" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/NormalMap/Ground.jpg" id="norm" hidden="true" crossorigin="anounymous" defer></img>
-    <img src="./Textures/Boss/Eye.png" id="eye" hidden="true" crossorigin="anonymous" defer></img>
-    <img src="./Textures/Boss/LEye.png" id="Leye" hidden="true" crossorigin="anonymous" defer></img>
-    <img src="./Textures/Boss/REye.png" id="Reye" hidden="true" crossorigin="anonymous" defer></img>
-    <canvas id="glcanvas">
-        你的浏览器似乎不支持或者禁用了HTML5 <code>&lt;canvas&gt;</code> 元素.
-    </canvas>
-    <script src="./models/BoxAndSword.js" defer></script>
-    <script src="./models/Bars.js" defer></script>
-    <script src="./models/Boss.js" defer></script>
-    <script src="./models/Polyhedron.js" defer></script>
-    <script src="./shaders/SkyBox.js" defer></script>
-    <script src="./shaders/Sword.js" defer></script>
-    <script src="./shaders/Bar.js" defer></script>
-    <script src="./shaders/Boss.js" defer></script>
-    <script src="./shaders/Floor.js" defer></script>
-    <script src="./shaders/Shadow.js" defer></script>
-    <script src="./scripts/GameLogicVariables.js" defer></script>
-    <script src="./scripts/init.js" defer></script>
-    <script src="./scripts/initTexture.js" defer></script>
-    <script src="./shaders/CircleAndBullets.js" defer></script>
-    <script src="./shaders/LaserAndThorn.js" defer></script>
-    <script src="./scripts/utils.js" defer></script>
-    <script src="./scripts/RenderConst.js" defer></script>
-    <script src="./scripts/processInput.js" defer></script>
-    <script src="./scripts/FrameBuffer.js" defer></script>
-    <script src="./scripts/BossAI.js" defer></script>
-    <script src="./scripts/Effects.js"></script>
-    <script src="./scripts/main.js" defer></script>
+<body>
+    <h1>My Little Game</h1>
+    <h2>操作说明</h2>
+    <p>使用A/W/S/D 左移/前进/后退/右移，按下鼠标左键进行攻击，左Shift键进行短暂冲刺</p>
+    <a href="./game.html"><img src="./Pictures/button.png"></img></a>
+    <p>
+        这是2108班2021K8009926027 陈玄烨自己制作的小小小游戏，虽然花了一个学期(然而前半学期进度极其缓慢)来制作但是仍然十分粗糙，体量依然很小<br/>
+        恶趣味也许来自本人的胡思乱想，也许来自群友们的启发，总之我觉得恶趣味也不算多？<br/>
+        如果要问为什么这个游戏模型这么丑，判定这么有问题，BOSS AI太蠢/太疯狗，技能太无脑，优化很差，光照效果很烂，阴影质量很差。。。<br/>
+        好吧，模型丑是因为我不会3D建模，所有模型都是一个个坐标硬编码进去的......<br/>
+        问题太多啦，总而言之，不是时间精力不够就是本人技术力不足，早知道做个2D游戏就没这么多破事儿了(恼<br/>
+        我自己测试用的显卡是RTX3060跑得很流畅，我对这个游戏渲染运算量也没啥把握，如果你玩起来掉帧严重请随意痛骂开发者的代码优化水平(<br/>
+        最后的最后，源代码我自己也觉得写得很难看。如果你觉得写得丑看不懂请务必痛骂开发者编程技艺欠佳(
+    </p>
+    <h1>致谢</h1>
+    <p>
+        感谢GAMES104的群友们对我开发过程中遇到的技术问题的耐心指导<br/>
+        感谢中国人民大学的兄弟提供的一张贴图(经过本人二次创作)<br/>
+        感谢2001邱瑞晨抠图提供的素材
+    </p>
+    <h1>外部素材来源:</h1>
+    <p>
+        封面图:Dark Souls Ⅲ宣传图，经调色和P图后完成<br/>
+        <a href="https://glmatrix.net">gl-Matrix</a>:经过自己删改，重写大部分代码完成，保留了原库中少数几个函数，并根据需要增加了部分新功能<br/>
+        特效:<a href="https://www.freepngimg.com/png/72937-fire-of-ring-border-circle-download-free-image">ring</a>，经过二次创作完成</p>
+    <h2>纹理:</h2>
+    <p>
+        用于表面的贴图:由中国人民大学的同学完成，经过二次加工<br/>
+        天空盒:<a href="https://opengameart.org/content/ulukais-space-skyboxes">skybox</a><br/>
+        子弹的贴图:由2001邱瑞晨提供，经过二次加工<br/>
+        地板纹理:<a href="https://www.deviantart.com/ndugger/art/Tileable-Futuristic-Grid-312360821">floor</a>经过二次加工<br/>
+        法线贴图:<a href="https://www.pinterest.com/pin/354728908125325312/">NormalMap</a>
+    </p>
+    <h2>音频:</h2>
+    <p>
+        BGM:来自NieR:Automata, <a href="https://music.163.com/#/song?id=468490605">双極ノ悪夢</a>
+    </p>
 </body>
 </html>

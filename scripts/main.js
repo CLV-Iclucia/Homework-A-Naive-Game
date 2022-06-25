@@ -35,6 +35,11 @@ function Rotate(M,p,theta,A)//使得物体绕着自身坐标系中的p点A轴旋
 function MoveSwd(currentTime)//移动剑，顺便移动剑尖和剑身上的碰撞箱
 {
 	let model=mat4.create();
+	if(ending==DIE)
+	{
+		mat4.set(model,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0);
+		return model;
+	}
 	let isAttacking=false;
 	if (currentTime <= ATKEndFrame)//攻击状态
 	{
@@ -85,6 +90,13 @@ function MoveSwd(currentTime)//移动剑，顺便移动剑尖和剑身上的碰�
 	}
 	return model;
 }
+function Exit()
+{
+	BGM.pause();
+	const ReturnButton=document.getElementById("Return");
+	ReturnButton.hidden=false;
+	document.exitPointerLock();
+}
 function main()
 {
     Reset();
@@ -100,6 +112,9 @@ function main()
 	const FloorVAO_S=initModel(gl,ShadowShader,FloorVer,BarIdx,5);
 	const ShadowFBO=initFrameBuffer(gl);
 	console.log(BGM.src);
+	canvas.requestPointerLock = canvas.requestPointerLock ||window.mozRequestPointerLock;
+    canvas.requestPointerLock();
+	BGM.play();
     function gameLoop(currentTime)
     {
         currentTime*=0.001;
@@ -107,9 +122,9 @@ function main()
         lastFrame=currentTime;
 		stamina+=deltaFrame*0.04;
 		if(stamina>=1.0)stamina=1.0;
-        processInput(currentTime);
+        if(HP>0.0)processInput(currentTime);
 		const swordModel=MoveSwd(currentTime);
-		runBossAI(currentTime);
+		if(BossHP>0.0)runBossAI(currentTime);
 		EyePos[0]=BossPos[0];
 		EyePos[1]=BossPos[1]+2.0;
 		EyePos[2]=BossPos[2];
@@ -117,7 +132,41 @@ function main()
 		PlayerCV.setPos(vec2.fromValues(cameraPos[0],cameraPos[2]));
 		PlayerCV.setY(cameraPos[1]-1.0);
 		CVM.DetectCollision(currentTime,PlayerCV);
-		if(HP<0.0)HP=0.0;
+		if(HP<0.0)
+		{
+			HP=0.0;
+			ending=DIE;
+		}
+		if(ending)
+		{
+			if(ending==DIE)
+			{
+				lightColor[0]-=0.2*deltaFrame;
+				lightColor[1]-=0.2*deltaFrame;
+				lightColor[2]-=0.2*deltaFrame;
+				if(lightColor[0]<0.0&&lightColor[1]<0.0&&lightColor[2]<0.0)
+				{
+					const DieImg=document.getElementById("die");
+					DieImg.hidden=false;
+					Exit();
+					return ;
+				}
+			}
+			else
+			{
+				BossPos[1]-=0.2*deltaFrame;
+				lightColor[0]+=0.2*deltaFrame;
+				lightColor[1]+=0.2*deltaFrame;
+				lightColor[2]+=0.2*deltaFrame;
+				if(lightColor[0]>1.0&&lightColor[1]>1.0&&lightColor[2]>1.0)
+				{
+					const VictoryImg=document.getElementById("victory");
+					VictoryImg.hidden=false;
+					Exit();
+					return ;
+				}
+			}
+		}
 		if(currentTime>BossunhurtTime)
 		{
 			if(SwdTipCV.Collide(BossCV)||SwdBladeCV.Collide(BossCV))
@@ -126,6 +175,11 @@ function main()
 				BossunhurtTime=currentTime+0.25;
 				if(BossHP<1.0)phase=2;
 			}
+		}
+		if(BossHP<0.0)
+		{
+			BossHP=0.0;
+			ending=VICTORY;
 		}
 		cameraPos[0]=PlayerCV.pos[0];
 		cameraPos[1]=PlayerCV.y+1.0;

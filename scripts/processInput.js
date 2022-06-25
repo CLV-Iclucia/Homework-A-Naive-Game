@@ -14,12 +14,6 @@ window.addEventListener('keydown',function(event)
         event.preventDefault();
     }
     else if(key=="ShiftLeft")LSHIFT=true;
-    else if(key=="Enter")
-    {
-        canvas.requestPointerLock = canvas.requestPointerLock ||window.mozRequestPointerLock;
-        canvas.requestPointerLock();
-		//BGM.play();
-    }
 },false);
 canvas.addEventListener('mousemove',function(event)
     {
